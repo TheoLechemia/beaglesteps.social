@@ -1,0 +1,326 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.os { display: flex; flex-direction: column; height: 600px; font-family: var(--font-sans); background: var(--surface-0); color: var(--text-primary); font-size: 14px; overflow: hidden; }
+.os-nav { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 44px; border-bottom: 0.5px solid var(--border); background: var(--surface-2); flex-shrink: 0; }
+.os-wordmark { font-family: var(--font-voice); font-size: 17px; flex-shrink: 0; }
+.os-nav-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.os-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--bg-accent); color: var(--text-accent); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; }
+
+.page { display: none; flex: 1; overflow: hidden; }
+.page.active { display: flex; }
+
+.os-tabs { display: flex; border-bottom: 0.5px solid var(--border); padding: 0 20px; background: var(--surface-2); flex-shrink: 0; }
+.os-tab { padding: 10px 14px; font-size: 13px; color: var(--text-muted); cursor: pointer; border-bottom: 1.5px solid transparent; margin-bottom: -0.5px; }
+.os-tab.active { color: var(--text-primary); border-bottom-color: var(--text-primary); }
+
+.feed-col { flex: 1; min-width: 0; border-right: 0.5px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+.feed { flex: 1; overflow-y: auto; }
+
+.os-trip { padding: 16px 20px; border-bottom: 0.5px solid var(--border); cursor: pointer; display: flex; gap: 14px; }
+.os-trip:hover { background: var(--surface-1); }
+.os-trip-left { flex: 1; min-width: 0; }
+.os-trip-right { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.os-trip-author { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.os-trip-avatar { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 500; flex-shrink: 0; }
+.os-trip-handle { font-size: 12px; color: var(--text-muted); }
+.os-trip-when { font-size: 12px; color: var(--text-muted); }
+.os-trip-title { font-family: var(--font-voice); font-size: 17px; line-height: 1.25; margin-bottom: 4px; }
+.os-trip-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.os-trip-footer { display: flex; align-items: center; gap: 14px; }
+.os-trip-stat { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); }
+.os-pill { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; padding: 2px 7px; border-radius: 20px; }
+.os-pill-live { background: var(--bg-success); color: var(--text-success); }
+.os-pill-done { background: var(--surface-1); color: var(--text-muted); border: 0.5px solid var(--border); }
+.os-thumb { width: 68px; height: 50px; border-radius: 8px; background: var(--surface-1); border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 20px; flex-shrink: 0; }
+
+.map-col { width: 240px; flex-shrink: 0; position: relative; overflow: hidden; }
+.map-bg { position: absolute; inset: 0; background: #dde8d4; }
+.map-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px); background-size: 24px 24px; }
+.map-road { position: absolute; background: rgba(255,255,255,0.5); }
+.map-pin { position: absolute; border-radius: 50%; border: 2px solid white; transform: translate(-50%,-50%); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.map-label { position: absolute; transform: translateX(-50%); background: white; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #333; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.1); pointer-events: none; }
+.map-attr { position: absolute; bottom: 6px; right: 8px; font-size: 9px; color: rgba(0,0,0,0.3); }
+
+/* TRIP DETAIL */
+.trip-detail-page { flex-direction: column; overflow: hidden; }
+.td-back { display: flex; align-items: center; gap: 6px; padding: 10px 16px; font-size: 13px; color: var(--text-muted); cursor: pointer; border-bottom: 0.5px solid var(--border); background: var(--surface-2); flex-shrink: 0; }
+.td-back:hover { color: var(--text-primary); }
+
+.td-body { display: flex; flex: 1; overflow: hidden; }
+.td-left { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; border-right: 0.5px solid var(--border); }
+
+.td-map { height: 200px; position: relative; overflow: hidden; background: #dde8d4; flex-shrink: 0; }
+.td-map-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px); background-size: 22px 22px; }
+
+.td-trip-info { padding: 12px 16px; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
+.td-trip-title { font-family: var(--font-voice); font-size: 19px; line-height: 1.2; margin-bottom: 3px; }
+.td-trip-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+
+.td-stats { display: grid; grid-template-columns: repeat(4, 1fr); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+.td-stat { padding: 8px 10px; text-align: center; border-right: 0.5px solid var(--border); }
+.td-stat:last-child { border-right: none; }
+.td-stat-val { font-size: 15px; font-weight: 500; margin-bottom: 1px; }
+.td-stat-lbl { font-size: 10px; color: var(--text-muted); }
+
+.td-trip-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px; }
+.td-followers { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); }
+.td-fav { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: 500; margin-right: -5px; }
+
+.td-step-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 0.5px solid var(--border); background: var(--surface-2); flex-shrink: 0; }
+.td-step-nav-btn { width: 26px; height: 26px; border-radius: 50%; border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); }
+.td-step-nav-btn:hover { background: var(--surface-1); color: var(--text-primary); }
+.td-step-nav-btn.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+.td-step-nav-label { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+
+.td-step-body { flex: 1; overflow-y: auto; }
+.td-step-inner { padding: 14px 16px; }
+.td-step-title { font-family: var(--font-voice); font-size: 17px; line-height: 1.2; margin-bottom: 2px; }
+.td-step-date { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
+.td-step-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 0.5px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+.td-step-stat { padding: 8px 10px; border-right: 0.5px solid var(--border); }
+.td-step-stat:last-child { border-right: none; }
+.td-step-stat-val { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+.td-step-stat-lbl { font-size: 10px; color: var(--text-muted); }
+
+.td-step-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 12px; }
+.td-step-photos { display: flex; gap: 6px; }
+.td-step-photo { height: 72px; border-radius: 8px; flex: 1; background: var(--surface-1); border: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 20px; position: relative; overflow: hidden; }
+.td-step-photo-more { position: absolute; inset: 0; background: rgba(0,0,0,0.32); display: flex; align-items: center; justify-content: center; color: white; font-size: 13px; font-weight: 500; }
+</style>
+
+<div class="os">
+  <nav class="os-nav">
+    <div class="os-wordmark">openstep</div>
+    <div class="os-nav-right">
+      <i class="ti ti-search" style="font-size:18px;color:var(--text-secondary);cursor:pointer;" aria-hidden="true"></i>
+      <i class="ti ti-bell" style="font-size:18px;color:var(--text-secondary);cursor:pointer;" aria-hidden="true"></i>
+      <div class="os-avatar">JL</div>
+    </div>
+  </nav>
+
+  <!-- PAGE HOME -->
+  <div class="page active" id="page-home">
+    <div class="feed-col">
+      <div class="os-tabs">
+        <div class="os-tab active" id="t-discover" onclick="switchTab('discover')">Discover</div>
+        <div class="os-tab" id="t-following" onclick="switchTab('following')">Following</div>
+      </div>
+      <div class="feed" id="feed-discover">
+        <div class="os-trip" onclick="showPage('trip')">
+          <div class="os-trip-left">
+            <div class="os-trip-author">
+              <div class="os-trip-avatar" style="background:#E1F5EE;color:#0F6E56;">TL</div>
+              <span class="os-trip-handle">theo.eurosky.social · 3 weeks ago</span>
+            </div>
+            <div class="os-trip-title">Southeast Asia — summer 2026</div>
+            <div class="os-trip-desc">Vietnam, Cambodia, Thailand. 2 mois sur la route avec un sac à dos et trop de banh mi.</div>
+            <div class="os-trip-footer">
+              <span class="os-trip-stat"><i class="ti ti-map-pin" style="font-size:11px" aria-hidden="true"></i> Hanoï → Bangkok</span>
+              <span class="os-trip-stat"><i class="ti ti-route" style="font-size:11px" aria-hidden="true"></i> 12 steps</span>
+              <span class="os-trip-stat"><i class="ti ti-heart" style="font-size:11px" aria-hidden="true"></i> 24</span>
+            </div>
+          </div>
+          <div class="os-trip-right">
+            <span class="os-pill os-pill-live"><i class="ti ti-circle-filled" style="font-size:7px" aria-hidden="true"></i> ongoing</span>
+            <div class="os-thumb"><i class="ti ti-photo" aria-hidden="true"></i></div>
+          </div>
+        </div>
+        <div class="os-trip">
+          <div class="os-trip-left">
+            <div class="os-trip-author">
+              <div class="os-trip-avatar" style="background:#FAECE7;color:#993C1D;">ML</div>
+              <span class="os-trip-handle">marie.bsky.social · 2 months ago</span>
+            </div>
+            <div class="os-trip-title">Patagonie — avril 2026</div>
+            <div class="os-trip-desc">Trek W dans le Torres del Paine. Jamais vu autant de vent de ma vie.</div>
+            <div class="os-trip-footer">
+              <span class="os-trip-stat"><i class="ti ti-map-pin" style="font-size:11px" aria-hidden="true"></i> Puerto Natales</span>
+              <span class="os-trip-stat"><i class="ti ti-route" style="font-size:11px" aria-hidden="true"></i> 8 steps</span>
+              <span class="os-trip-stat"><i class="ti ti-heart" style="font-size:11px" aria-hidden="true"></i> 51</span>
+            </div>
+          </div>
+          <div class="os-trip-right">
+            <span class="os-pill os-pill-done">ended</span>
+            <div class="os-thumb"><i class="ti ti-photo" aria-hidden="true"></i></div>
+          </div>
+        </div>
+        <div class="os-trip">
+          <div class="os-trip-left">
+            <div class="os-trip-author">
+              <div class="os-trip-avatar" style="background:#EEEDFE;color:#534AB7;">SB</div>
+              <span class="os-trip-handle">sarah.bsky.social · 5 months ago</span>
+            </div>
+            <div class="os-trip-title">Japon — printemps des cerisiers</div>
+            <div class="os-trip-desc">Tokyo, Kyoto, Osaka. Sakura et convenience stores à 2h du matin.</div>
+            <div class="os-trip-footer">
+              <span class="os-trip-stat"><i class="ti ti-map-pin" style="font-size:11px" aria-hidden="true"></i> Tokyo → Osaka</span>
+              <span class="os-trip-stat"><i class="ti ti-route" style="font-size:11px" aria-hidden="true"></i> 15 steps</span>
+              <span class="os-trip-stat"><i class="ti ti-heart" style="font-size:11px" aria-hidden="true"></i> 112</span>
+            </div>
+          </div>
+          <div class="os-trip-right">
+            <span class="os-pill os-pill-done">ended</span>
+            <div class="os-thumb"><i class="ti ti-photo" aria-hidden="true"></i></div>
+          </div>
+        </div>
+      </div>
+      <div class="feed" id="feed-following" style="display:none">
+        <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;">follow people to see their trips here</div>
+      </div>
+    </div>
+    <div class="map-col">
+      <div class="map-bg"></div>
+      <div class="map-grid"></div>
+      <div class="map-road" style="top:44%;left:0;right:0;height:3px;"></div>
+      <div class="map-road" style="top:0;bottom:0;left:40%;width:2px;"></div>
+      <div class="map-pin" style="top:34%;left:66%;background:#1D9E75;width:9px;height:9px;"></div>
+      <div class="map-label" style="top:26%;left:66%;">Southeast Asia</div>
+      <div class="map-pin" style="top:72%;left:18%;background:#D85A30;width:9px;height:9px;"></div>
+      <div class="map-label" style="top:64%;left:18%;">Patagonie</div>
+      <div class="map-pin" style="top:28%;left:74%;background:#7F77DD;width:9px;height:9px;"></div>
+      <div class="map-label" style="top:20%;left:74%;">Japon</div>
+      <div class="map-attr">© OpenStreetMap</div>
+    </div>
+  </div>
+
+  <!-- PAGE TRIP DETAIL -->
+  <div class="page trip-detail-page" id="page-trip">
+    <div class="td-back" onclick="showPage('home')">
+      <i class="ti ti-arrow-left" style="font-size:14px" aria-hidden="true"></i> Back
+    </div>
+    <div class="td-body">
+      <div class="td-left">
+
+        <div class="td-map">
+          <div class="td-map-grid"></div>
+          <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 400 200" preserveAspectRatio="none">
+            <polyline points="30,170 90,135 150,105 200,80 255,58 310,38 375,18" fill="none" stroke="#378ADD" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="30" cy="170" r="7" fill="#1D9E75" stroke="white" stroke-width="2.5"/>
+            <circle cx="375" cy="18" r="7" fill="#E24B4A" stroke="white" stroke-width="2.5"/>
+            <circle id="active-dot" cx="200" cy="80" r="9" fill="#185FA5" stroke="white" stroke-width="2.5"/>
+          </svg>
+        </div>
+
+        <div class="td-trip-info">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">
+            <div>
+              <div class="td-trip-title">Southeast Asia — summer 2026</div>
+              <div class="td-trip-sub">Hanoï → Bangkok</div>
+            </div>
+            <button style="font-size:11px;padding:4px 10px;flex-shrink:0;">Follow trip</button>
+          </div>
+          <div class="td-stats">
+            <div class="td-stat"><div class="td-stat-val">4 200 km</div><div class="td-stat-lbl">Distance</div></div>
+            <div class="td-stat"><div class="td-stat-val">54 days</div><div class="td-stat-lbl">Time</div></div>
+            <div class="td-stat"><div class="td-stat-val">12</div><div class="td-stat-lbl">Steps</div></div>
+            <div class="td-stat"><div class="td-stat-val">24</div><div class="td-stat-lbl">Likes</div></div>
+          </div>
+          <div class="td-trip-desc">A northbound trip across Southeast Asia — Vietnam, Cambodia, Thailand — from June to August 2026.</div>
+          <div class="td-followers">
+            <div style="display:flex;">
+              <div class="td-fav" style="background:#E1F5EE;color:#0F6E56;">A</div>
+              <div class="td-fav" style="background:#FAECE7;color:#993C1D;">B</div>
+              <div class="td-fav" style="background:#EEEDFE;color:#534AB7;">C</div>
+            </div>
+            <span style="margin-left:8px;">Followed by 24 hikers</span>
+          </div>
+        </div>
+
+        <div class="td-step-nav">
+          <div class="td-step-nav-btn disabled" id="btn-prev" onclick="changeStep(-1)"><i class="ti ti-chevron-left" style="font-size:13px" aria-hidden="true"></i></div>
+          <div class="td-step-nav-label" id="step-label">Step 1 of 4 <i class="ti ti-chevron-down" style="font-size:12px" aria-hidden="true"></i></div>
+          <div class="td-step-nav-btn" id="btn-next" onclick="changeStep(1)"><i class="ti ti-chevron-right" style="font-size:13px" aria-hidden="true"></i></div>
+        </div>
+
+        <div class="td-step-body">
+          <div class="td-step-inner" id="step-content"></div>
+        </div>
+
+      </div>
+
+      <div class="map-col" style="width:220px;">
+        <div class="map-bg"></div>
+        <div class="map-grid"></div>
+        <div class="map-road" style="top:0;bottom:0;left:45%;width:2px;"></div>
+        <div class="map-road" style="top:55%;left:0;right:0;height:2px;"></div>
+        <div id="step-pins"></div>
+        <div class="map-attr">© OpenStreetMap</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const steps = [
+  { title:"Départ — Paris CDG", date:"15 juin 2026", loc:"Paris, France",
+    stats:[{val:"16h",lbl:"Vol"},{val:"1 escale",lbl:"Via Dubai"},{val:"Step 1",lbl:"du voyage"}],
+    desc:"Vol de nuit pour Hanoï via Dubai. 16h de trajet, un seul film regardé, trois tentatives de sommeil ratées.",
+    photos:2, svgX:30, svgY:170, mapTop:"76%", mapLeft:"28%" },
+  { title:"Arrivée à Hanoï", date:"28 juin 2026", loc:"Hanoï, Vietnam",
+    stats:[{val:"34°C",lbl:"Température"},{val:"phở",lbl:"Premier repas"},{val:"Step 2",lbl:"du voyage"}],
+    desc:"Premier contact avec la ville. Le quartier ancien est un labyrinthe de scooters. Traverser la rue demande une confiance aveugle.",
+    photos:5, svgX:200, svgY:80, mapTop:"42%", mapLeft:"62%" },
+  { title:"Baie d'Ha Long", date:"25 juin 2026", loc:"Ha Long, Vietnam",
+    stats:[{val:"2 nuits",lbl:"Sur le bateau"},{val:"1 600",lbl:"Îles et îlots"},{val:"Step 3",lbl:"du voyage"}],
+    desc:"2 jours à naviguer entre les karsts. Le brouillard du matin donnait l'impression d'être dans un film de Miyazaki.",
+    photos:8, svgX:310, svgY:38, mapTop:"22%", mapLeft:"72%" },
+  { title:"Hội An", date:"20 juin 2026", loc:"Hội An, Vietnam",
+    stats:[{val:"UNESCO",lbl:"Classée"},{val:"cao lầu",lbl:"Spécialité"},{val:"Step 4",lbl:"du voyage"}],
+    desc:"La vieille ville est figée dans le temps. Les lanternes en papier illuminent les ruelles le soir.",
+    photos:12, svgX:375, svgY:18, mapTop:"12%", mapLeft:"80%" }
+];
+
+let active = 0;
+
+function renderStep() {
+  const s = steps[active];
+  document.getElementById('step-label').innerHTML = `Step ${active+1} of ${steps.length} <i class="ti ti-chevron-down" style="font-size:12px" aria-hidden="true"></i>`;
+  document.getElementById('btn-prev').classList.toggle('disabled', active === 0);
+  document.getElementById('btn-next').classList.toggle('disabled', active === steps.length - 1);
+
+  const dot = document.getElementById('active-dot');
+  if (dot) { dot.setAttribute('cx', s.svgX); dot.setAttribute('cy', s.svgY); }
+
+  const pins = document.getElementById('step-pins');
+  pins.innerHTML = steps.map((st, i) => `
+    <div style="position:absolute;top:${st.mapTop};left:${st.mapLeft};width:${i===active?'12px':'8px'};height:${i===active?'12px':'8px'};border-radius:50%;background:${i===active?'#185FA5':i<active?'#1D9E75':'#888780'};border:2px solid white;transform:translate(-50%,-50%);box-shadow:0 1px 3px rgba(0,0,0,0.2);cursor:pointer;" onclick="selectStep(${i})"></div>
+    ${i===active?`<div style="position:absolute;top:calc(${st.mapTop} - 22px);left:${st.mapLeft};transform:translateX(-50%);background:white;border:0.5px solid rgba(0,0,0,0.12);border-radius:4px;padding:2px 5px;font-size:10px;color:#333;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.1);pointer-events:none;">${st.title}</div>`:''}
+  `).join('');
+
+  const photosHTML = Array.from({length: Math.min(s.photos, 3)}).map((_,i) => {
+    if (i === 2 && s.photos > 3) return `<div class="td-step-photo"><i class="ti ti-photo" aria-hidden="true"></i><div class="td-step-photo-more">+${s.photos-2}</div></div>`;
+    return `<div class="td-step-photo"><i class="ti ti-photo" aria-hidden="true"></i></div>`;
+  }).join('');
+
+  document.getElementById('step-content').innerHTML = `
+    <div class="td-step-title">${s.title}</div>
+    <div class="td-step-date">
+      <i class="ti ti-calendar" style="font-size:11px" aria-hidden="true"></i>${s.date}
+      <span style="margin-left:4px;display:inline-flex;align-items:center;gap:3px;"><i class="ti ti-map-pin" style="font-size:11px" aria-hidden="true"></i>${s.loc}</span>
+    </div>
+    <div class="td-step-stats">
+      ${s.stats.map(st=>`<div class="td-step-stat"><div class="td-step-stat-val">${st.val}</div><div class="td-step-stat-lbl">${st.lbl}</div></div>`).join('')}
+    </div>
+    <div class="td-step-desc">${s.desc}</div>
+    <div class="td-step-photos">${photosHTML}</div>
+  `;
+}
+
+function selectStep(i) { active = i; renderStep(); }
+function changeStep(dir) { const n = active+dir; if(n>=0 && n<steps.length){active=n;renderStep();} }
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if (name === 'trip') renderStep();
+}
+
+function switchTab(tab) {
+  document.getElementById('t-discover').classList.toggle('active', tab==='discover');
+  document.getElementById('t-following').classList.toggle('active', tab==='following');
+  document.getElementById('feed-discover').style.display = tab==='discover'?'':'none';
+  document.getElementById('feed-following').style.display = tab==='following'?'':'none';
+}
+</script>
