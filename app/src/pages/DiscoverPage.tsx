@@ -11,13 +11,18 @@ export function DiscoverPage() {
   return (
     <div className="flex flex-1 overflow-hidden">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden border-r-[0.5px] border-line">
+        <div className="flex shrink-0 items-center justify-center border-b-[0.5px] border-line px-5 py-2.5 font-voice text-[40px]">
+          <span>
+            BeagleSteps<span className="align-bottom text-[16px] text-primary">.social</span>
+          </span>
+        </div>
         <div className="flex shrink-0 border-b-[0.5px] border-line bg-surface-2 px-5">
           <button
             type="button"
             onClick={() => setTab('discover')}
-            className={`-mb-[0.5px] cursor-pointer border-b-[1.5px] px-3.5 py-2.5 text-[13px] ${
+            className={`-mb-[0.5px] cursor-pointer border-b-[4px] px-3.5 py-2.5 text-[15px] ${
               tab === 'discover'
-                ? 'border-ink text-ink'
+                ? 'border-primary text-ink'
                 : 'border-transparent text-ink-muted'
             }`}
           >
@@ -26,9 +31,9 @@ export function DiscoverPage() {
           <button
             type="button"
             onClick={() => setTab('following')}
-            className={`-mb-[0.5px] cursor-pointer border-b-[1.5px] px-3.5 py-2.5 text-[13px] ${
+            className={`-mb-[0.5px] cursor-pointer border-b-[4px] px-3.5 py-2.5 text-[15px] ${
               tab === 'following'
-                ? 'border-ink text-ink'
+                ? 'border-primary text-ink'
                 : 'border-transparent text-ink-muted'
             }`}
           >
@@ -37,9 +42,9 @@ export function DiscoverPage() {
           <button
             type="button"
             onClick={() => setTab('travels')}
-            className={`-mb-[0.5px] cursor-pointer border-b-[1.5px] px-3.5 py-2.5 text-[13px] ${
+            className={`-mb-[0.5px] cursor-pointer border-b-[4px] px-3.5 py-2.5 text-[15px] ${
               tab === 'travels'
-                ? 'border-ink text-ink'
+                ? 'border-primary text-ink'
                 : 'border-transparent text-ink-muted'
             }`}
           >

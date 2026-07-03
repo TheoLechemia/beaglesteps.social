@@ -23,7 +23,7 @@ export function TripDetailPage() {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-ink-muted">
         <p className="text-[13px]">Trip not found.</p>
-        <Link to="/" className="text-[13px] text-ink-accent">
+        <Link to="/" className="text-[13px] text-primary">
           Back to Discover
         </Link>
       </div>

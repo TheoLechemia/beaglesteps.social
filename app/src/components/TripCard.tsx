@@ -38,7 +38,7 @@ export function TripCard({ trip }: TripCardProps) {
       </div>
       <div className="flex shrink-0 flex-col items-end gap-2">
         {trip.status === 'ongoing' ? (
-          <span className="inline-flex items-center gap-[3px] rounded-full bg-surface-success px-[7px] py-0.5 text-[10px] text-ink-success">
+          <span className="inline-flex items-center gap-[3px] rounded-full bg-success-subtle px-[7px] py-0.5 text-[10px] text-success">
             <IconCircleFilled size={7} /> ongoing
           </span>
         ) : (

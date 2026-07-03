@@ -10,11 +10,31 @@
   --color-ink: #14151a;
   --color-ink-secondary: #52525b;
   --color-ink-muted: #9a9a9e;
-  --color-ink-accent: #0f6e56;
 
-  --color-surface-accent: #e1f5ee;
-  --color-surface-success: #e3f8ec;
-  --color-ink-success: #178a52;
+  --color-primary-100: #e3f7db;
+  --color-primary-200: #c3ecb0;
+  --color-primary-300: #9edc82;
+  --color-primary-400: #6dc84e;
+  --color-primary-500: #45b428;
+  --color-primary-600: #2da00a;
+  --color-primary-700: #237f08;
+  --color-primary-800: #1b6207;
+  --color-primary-900: #144a05;
+  --color-primary: var(--color-primary-600);
+
+  --color-accent-100: #fbe4d5;
+  --color-accent-200: #f4c3a2;
+  --color-accent-300: #eba06d;
+  --color-accent-400: #e07f42;
+  --color-accent-500: #cf6527;
+  --color-accent-600: #b5511c;
+  --color-accent-700: #944015;
+  --color-accent-800: #713010;
+  --color-accent-900: #4f210a;
+  --color-accent: var(--color-accent-600);
+
+  --color-success: #178a52;
+  --color-success-subtle: #e3f8ec;
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-voice: 'Fraunces', Georgia, serif;
@@ -25,5 +45,5 @@ body {
 }
 
 .test {
-  color: #0000;
+  color: #2da00ade;
 }
