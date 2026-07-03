@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { IconHome, IconSearch, IconUser } from '@tabler/icons-react';
+import { IconHome, IconPlus, IconSearch, IconUser } from '@tabler/icons-react';
 import { useAuth } from '../context/AuthContext';
+import { AddStepModal } from './AddStepModal';
 
 
 export function SideNav() {
   const { pathname } = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAddStepOpen, setIsAddStepOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { logout } = useAuth()
+  const { logout, profile } = useAuth()
+
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -29,22 +32,23 @@ export function SideNav() {
         <button
           type="button"
           onClick={() => setIsMenuOpen((open) => !open)}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 font-voice text-[13px] font-medium text-primary"
+          className="flex w-full items-center gap-2 rounded-full py-1 pr-2 cursor-pointer hover:bg-surface-1"
         >
-          BS
+          <img className="h-9 w-9 shrink-0 rounded-full" src={profile?.avatar} alt="" />
+          <span className="truncate text-[14px] font-bold">@{profile?.handle}</span>
         </button>
         {isMenuOpen && (
           <div className="absolute left-0 top-11 z-10 w-44 overflow-hidden rounded-md border-[0.5px] border-line bg-surface-0 shadow-lg">
             <button
               type="button"
-              className="block w-full px-3 py-2 text-left text-[14px] text-ink hover:bg-surface-1"
+              className="block w-full px-3 py-2 text-left text-[14px] cursor-pointer hover:bg-surface-1"
             >
               My profil
             </button>
             <button
               type="button"
               onClick={logout}
-              className="block w-full px-3 py-2 text-left text-[14px] text-ink hover:bg-surface-1"
+              className="block w-full px-3 py-2 text-left text-[14px] cursor-pointer hover:bg-surface-1"
             >
               Se déconnecter
             </button>
@@ -77,6 +81,17 @@ export function SideNav() {
         <IconUser size={40} />
         Profil
       </button>
+
+      <button
+        type="button"
+        onClick={() => setIsAddStepOpen(true)}
+        className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-[15px] font-semibold text-surface-0 hover:bg-primary-700"
+      >
+        <IconPlus size={20} />
+        Ajouter une étape
+      </button>
+
+      {isAddStepOpen && <AddStepModal onClose={() => setIsAddStepOpen(false)} />}
     </nav>
   );
 }
