@@ -1,0 +1,51 @@
+{
+  "$type": "app.beaglesteps.step",
+  "tripRef": {
+    "uri": "at://did:plc:ebvbdew5dfys2os6dz6u2qde/app.beaglesteps.trip/abc123",
+    "cid": "bafyreiabc..."
+  },
+  "title": "Arrivée à Hanoï",
+  "body": "# Jour 1\n\nL'avion a atterri à 6h du matin...",
+  "date": "2026-06-28T10:00:00Z",
+  "location": {
+    "$type": "community.lexicon.location.geo",
+    "latitude": "21.0285",
+    "longitude": "105.8542"
+  },
+  "address": {
+    "$type": "community.lexicon.location.address",
+    "locality": "Hanoï",
+    "country": "VN"
+  },
+  "photos": [
+    {
+      "$type": "blob",
+      "ref": { "$link": "bafkrei..." },
+      "mimeType": "image/jpeg",
+      "size": 245000
+    }
+  ],
+  "order": 1,
+  "crossPostRef": {
+    "uri": "at://did:plc:ebvbdew5dfys2os6dz6u2qde/app.bsky.feed.post/3jui7kd3ls22e",
+    "cid": "bafyreiemb3n..."
+  }
+}
+
+
+
+
+{
+  "$type": "app.beaglesteps.trip",
+  "title": "Southeast Asia — summer 2026",
+  "description": "Vietnam, Cambodia, Thailand. 2 mois sur la route avec un sac à dos et trop de banh mi.",
+  "startDate": "2026-06-15T00:00:00Z",
+  "endDate": null,
+  "coverImageBlob": {
+    "$type": "blob",
+    "ref": { "$link": "bafkreicover123..." },
+    "mimeType": "image/jpeg",
+    "size": 512000
+  },
+  "visibility": "public"
+}

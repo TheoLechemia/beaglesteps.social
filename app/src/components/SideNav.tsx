@@ -3,12 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { IconHome, IconPlus, IconSearch, IconUser } from '@tabler/icons-react';
 import { useAuth } from '../context/AuthContext';
 import { AddStepModal } from './AddStepModal';
+import { AddTripModal } from './AddTripModal ';
 
 
 export function SideNav() {
   const { pathname } = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddStepOpen, setIsAddStepOpen] = useState(false);
+  const [isAddTripOpen, setIsAddTripOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { logout, profile } = useAuth()
 
@@ -74,13 +76,14 @@ export function SideNav() {
         Rechercher
       </button>
 
-      <button
-        type="button"
+      <Link
+        to={`/profile/${profile?.handle}`}
         className="flex items-center gap-3 rounded-full px-3 py-2 text-left text-[17px] text-ink-secondary hover:bg-surface-1"
       >
-        <IconUser size={40} />
-        Profil
-      </button>
+          <IconUser size={40} />
+          Profil
+      </Link>
+
 
       <button
         type="button"
@@ -88,10 +91,19 @@ export function SideNav() {
         className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-[15px] font-semibold text-surface-0 hover:bg-primary-700"
       >
         <IconPlus size={20} />
-        Ajouter une étape
+        Add a step
+      </button>
+      <button
+        type="button"
+        onClick={() => setIsAddTripOpen(true)}
+        className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-full border-2 py-2.5 text-[15px] font-semibold hover:bg-black hover:text-white "
+      >
+        <IconPlus size={20} />
+        Create a trip
       </button>
 
       {isAddStepOpen && <AddStepModal onClose={() => setIsAddStepOpen(false)} />}
+      {isAddTripOpen && <AddTripModal onClose={() => setIsAddTripOpen(false)} />}
     </nav>
   );
 }

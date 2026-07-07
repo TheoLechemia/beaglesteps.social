@@ -1,23 +1,123 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import {
-  IconArrowLeft,
-  IconCalendar,
-  IconChevronDown,
-  IconChevronLeft,
-  IconChevronRight,
-  IconMapPin,
-  IconPhoto,
-} from '@tabler/icons-react';
-import { getTripById } from '../data/trips';
+import { IconArrowLeft, IconChevronDown } from '@tabler/icons-react';
 import { Avatar } from '../components/Avatar';
 import { TripStepMap } from '../components/TripStepMap';
-import { StepMapPins } from '../components/StepMapPins';
+import { Step, type StepEntry } from '../components/Step';
+import { useAuth } from '../context/AuthContext';
+import type { TripEntry } from '../context/UserTripContext';
+import type { Trip, TripStep } from '../types/trip';
+
+function stepEntryToTripStep(entry: StepEntry, index: number, total: number): TripStep {
+  const { title, body, date, location, address, photos } = entry.value;
+  const locationLabel = address?.locality
+    ? [address.locality, address.country].filter(Boolean).join(', ')
+    : location
+      ? `${location.latitude}, ${location.longitude}`
+      : '';
+  const progress = total > 1 ? index / (total - 1) : 0;
+
+  return {
+    id: entry.uri,
+    title: title || 'Untitled step',
+    date: date ?? '',
+    location: locationLabel,
+    stats: [],
+    description: body ?? '',
+    photos: photos?.length ?? 0,
+    routePoint: { x: 30 + progress * 340, y: 100 },
+    mapPosition: { top: '50%', left: `${10 + progress * 80}%` },
+  };
+}
+
+function tripEntryToTrip(entry: TripEntry, sortedSteps: StepEntry[], authorHandle: string): Trip {
+  return {
+    id: entry.uri,
+    title: entry.value.title,
+    subtitle: `@${authorHandle}`,
+    description: entry.value.description ?? '',
+    author: {
+      handle: authorHandle,
+      postedAgo: '',
+      avatar: { initials: authorHandle.slice(0, 2).toUpperCase(), bg: '#E1F5EE', color: '#0F6E56' },
+    },
+    status: entry.value.endDate ? 'ended' : 'ongoing',
+    stats: { distance: '—', duration: '—', likes: 0 },
+    followers: { count: 0, avatars: [] },
+    mapPin: { top: '50%', left: '50%', color: '#1D9E75', label: entry.value.title },
+    steps: sortedSteps.map((s, i) => stepEntryToTripStep(s, i, sortedSteps.length)),
+  };
+}
 
 export function TripDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const trip = id ? getTripById(id) : undefined;
+  const { handle, rkey } = useParams<{ handle: string; rkey: string }>();
+  const { agent } = useAuth();
   const [activeStep, setActiveStep] = useState(0);
+  const [remoteTrip, setRemoteTrip] = useState<TripEntry | null>(null);
+  const [remoteSteps, setRemoteSteps] = useState<StepEntry[]>([]);
+  const [isLoadingRemote, setIsLoadingRemote] = useState(false);
+  const [isStepMenuOpen, setIsStepMenuOpen] = useState(false);
+  const stepMenuRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    if (!isStepMenuOpen) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      if (stepMenuRef.current && !stepMenuRef.current.contains(e.target as Node)) {
+        setIsStepMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isStepMenuOpen]);
+
+  useEffect(() => {
+    if (!agent || !handle || !rkey) return;
+    let cancelled = false;
+    setIsLoadingRemote(true);
+
+    agent.com.atproto.identity
+      .resolveHandle({ handle })
+      .then(({ data }) =>
+        Promise.all([
+          agent.com.atproto.repo.getRecord({ repo: data.did, collection: 'app.beaglesteps.trip', rkey }),
+          agent.com.atproto.repo.listRecords({ repo: data.did, collection: 'app.beaglesteps.step' }),
+        ]),
+      )
+      .then(([tripRes, stepsRes]) => {
+        if (cancelled) return;
+        setRemoteTrip(tripRes.data as TripEntry);
+        setRemoteSteps(stepsRes.data.records as StepEntry[]);
+        setIsLoadingRemote(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRemoteTrip(null);
+        setIsLoadingRemote(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [agent, handle, rkey]);
+
+  let trip: Trip | undefined;
+  let sortedStepEntries: StepEntry[] = [];
+  if (remoteTrip) {
+    const entrySteps = remoteSteps.filter((s) => s.value.tripRef?.uri === remoteTrip.uri);
+    sortedStepEntries = [...entrySteps].sort((a, b) => (a.value.order ?? 0) - (b.value.order ?? 0));
+    trip = tripEntryToTrip(remoteTrip, sortedStepEntries, handle ?? '');
+  }
+
+  if (!trip && isLoadingRemote) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-ink-muted">
+        <p className="text-[13px]">Loading trip...</p>
+      </div>
+    );
+  }
 
   if (!trip) {
     return (
@@ -30,9 +130,18 @@ export function TripDetailPage() {
     );
   }
 
-  const step = trip.steps[activeStep];
-  const visiblePhotos = Math.min(step.photos, 3);
-  const extraPhotos = step.photos - 2;
+  if (trip.steps.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-ink-muted">
+        <p className="text-[13px]">This trip has no steps yet.</p>
+        <Link to="/" className="text-[13px] text-primary">
+          Back to Discover
+        </Link>
+      </div>
+    );
+  }
+
+  const feedSteps = sortedStepEntries.map((entry, index) => ({ entry, index })).reverse();
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -44,10 +153,11 @@ export function TripDetailPage() {
       </Link>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden border-r-[0.5px] border-line">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
           <TripStepMap steps={trip.steps} activeIndex={activeStep} />
 
-          <div className="shrink-0 border-b-[0.5px] border-line p-3">
+          <div className="flex-1 overflow-y-auto">
+          <div className="border-b-[0.5px] border-line p-3">
             <div className="mb-2 flex items-start justify-between gap-2">
               <div>
                 <div className="font-voice text-[19px] leading-tight">{trip.title}</div>
@@ -81,7 +191,7 @@ export function TripDetailPage() {
             <div className="mb-2 text-[13px] leading-relaxed text-ink-secondary">
               {trip.description}
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-ink-muted">
+            {/* <div className="flex items-center gap-2 text-[11px] text-ink-muted">
               <div className="flex">
                 {trip.followers.avatars.map((avatar) => (
                   <Avatar
@@ -94,89 +204,53 @@ export function TripDetailPage() {
                 ))}
               </div>
               <span className="ml-2">Followed by {trip.followers.count} hikers</span>
+            </div> */}
+          </div>
+
+          <div className="flex items-center justify-between border-b-[0.5px] border-line bg-surface-2 px-4 py-2">
+            <span className="text-[13px] text-ink-muted">{trip.steps.length} steps</span>
+            <div className="relative" ref={stepMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsStepMenuOpen((open) => !open)}
+                className="flex cursor-pointer items-center gap-1 text-[13px] font-medium"
+              >
+                Jump to step <IconChevronDown size={12} />
+              </button>
+              {isStepMenuOpen && (
+                <div className="absolute right-0 top-6 z-10 max-h-60 w-48 overflow-y-auto rounded-md border-[0.5px] border-line bg-surface-0 shadow-lg">
+                  {feedSteps.map(({ entry, index }) => (
+                    <button
+                      key={entry.uri}
+                      type="button"
+                      onClick={() => {
+                        setActiveStep(index);
+                        setIsStepMenuOpen(false);
+                        stepRefs.current[entry.uri]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }}
+                      className={`block w-full truncate px-3 py-2 text-left text-[13px] cursor-pointer hover:bg-surface-1 ${
+                        index === activeStep ? 'font-medium text-ink' : 'text-ink-secondary'
+                      }`}
+                    >
+                      {index + 1}. {entry.value.title || 'Untitled step'}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center justify-between border-b-[0.5px] border-line bg-surface-2 px-4 py-2">
-            <button
-              type="button"
-              disabled={activeStep === 0}
-              onClick={() => setActiveStep((s) => s - 1)}
-              className="flex h-[26px] w-[26px] items-center justify-center rounded-full border-[0.5px] border-line text-ink-secondary disabled:pointer-events-none disabled:opacity-30 hover:bg-surface-1 hover:text-ink"
+          {feedSteps.map(({ entry }) => (
+            <div
+              key={entry.uri}
+              ref={(el) => {
+                stepRefs.current[entry.uri] = el;
+              }}
             >
-              <IconChevronLeft size={13} />
-            </button>
-            <div className="flex items-center gap-1 text-[13px] font-medium">
-              Step {activeStep + 1} of {trip.steps.length} <IconChevronDown size={12} />
+              <Step step={entry} authorHandle={handle ?? ''} />
             </div>
-            <button
-              type="button"
-              disabled={activeStep === trip.steps.length - 1}
-              onClick={() => setActiveStep((s) => s + 1)}
-              className="flex h-[26px] w-[26px] items-center justify-center rounded-full border-[0.5px] border-line text-ink-secondary disabled:pointer-events-none disabled:opacity-30 hover:bg-surface-1 hover:text-ink"
-            >
-              <IconChevronRight size={13} />
-            </button>
+          ))}
           </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-3.5">
-              <div className="font-voice text-[17px] leading-tight">{step.title}</div>
-              <div className="mb-2.5 flex items-center gap-1.5 text-xs text-ink-muted">
-                <IconCalendar size={11} />
-                {step.date}
-                <span className="ml-1 inline-flex items-center gap-1">
-                  <IconMapPin size={11} />
-                  {step.location}
-                </span>
-              </div>
-              <div className="mb-3 grid grid-cols-3 overflow-hidden rounded-lg border-[0.5px] border-line">
-                {step.stats.map((stat, i) => (
-                  <div
-                    key={i}
-                    className="border-r-[0.5px] border-line px-2.5 py-2 last:border-r-0"
-                  >
-                    <div className="text-[13px] font-medium">{stat.value}</div>
-                    <div className="text-[10px] text-ink-muted">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="mb-3 text-[13px] leading-relaxed text-ink-secondary">
-                {step.description}
-              </div>
-              <div className="flex gap-1.5">
-                {Array.from({ length: visiblePhotos }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="relative flex h-[72px] flex-1 items-center justify-center overflow-hidden rounded-lg border-[0.5px] border-line bg-surface-1 text-ink-muted"
-                  >
-                    <IconPhoto size={20} />
-                    {i === 2 && step.photos > 3 && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/32 text-[13px] font-medium text-white">
-                        +{extraPhotos}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative w-[220px] shrink-0 overflow-hidden">
-          <div className="absolute inset-0 bg-[#dde8d4]" />
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-            }}
-          />
-          <div className="absolute inset-y-0 w-[2px] bg-white/50" style={{ left: '45%' }} />
-          <div className="absolute inset-x-0 h-[2px] bg-white/50" style={{ top: '55%' }} />
-          <StepMapPins steps={trip.steps} activeIndex={activeStep} onSelect={setActiveStep} />
-          <div className="absolute bottom-1.5 right-2 text-[9px] text-black/30">© OpenStreetMap</div>
         </div>
       </div>
     </div>

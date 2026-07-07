@@ -1,0 +1,10 @@
+{
+  "tripRef": "strongRef → app.beaglesteps.trip",
+  "title": "string",
+  "description": "string",
+  "startDate": "datetime",
+  "endDate": "datetime (nullable",
+  "photos": "blob[]",
+  "order": "integer",
+  "crossPostRef": "strongRef → app.bsky.feed.post (nullable)"
+}

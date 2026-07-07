@@ -3,38 +3,29 @@ import type { SubmitEvent } from 'react';
 import { IconX } from '@tabler/icons-react';
 import { useUserTrip } from '../context/UserTripContext';
 
-interface AddStepModalProps {
+interface AddTripModalProps {
   onClose: () => void;
 }
 
-export function AddStepModal({ onClose }: AddStepModalProps) {
-  const { trips, createStep } = useUserTrip();
-  const [text, setText] = useState('');
+export function AddTripModal({ onClose }: AddTripModalProps) {
+  const { createTrip } = useUserTrip();
   const [isPosting, setIsPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!text.trim()) return;
     const formData = new FormData(e.currentTarget);
-    const trip = trips.find((t) => t.uri === formData.get('tripUri'));
-    if (!trip) return;
 
     setIsPosting(true);
     setError(null);
 
     try {
-      await createStep({
-        $type: 'app.beaglesteps.step',
-        tripRef: { uri: trip.uri, cid: trip.cid },
-        body: formData.get('body') as string,
+      await createTrip({
+        $type: 'app.beaglesteps.trip',
         title: formData.get('title') as string,
-        date: formData.get('date') as string,
+        description: formData.get('description') as string,
+        startDate: formData.get('startDate') as string,
         createdAt: new Date().toISOString(),
-        location: {
-          longitude: formData.get('longitude') as string,
-          latitude: formData.get('latitude') as string,
-        },
       });
       onClose();
     } catch {
@@ -48,7 +39,7 @@ export function AddStepModal({ onClose }: AddStepModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-[440px] rounded-2xl border-[0.5px] border-line bg-surface-0 p-4 shadow-xl">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-voice text-[17px]">Ajouter une étape</h2>
+          <h2 className="font-voice text-[17px]">Create a trip</h2>
           <button
             type="button"
             onClick={onClose}
@@ -59,41 +50,17 @@ export function AddStepModal({ onClose }: AddStepModalProps) {
         </div>
 
         <form onSubmit={handleSubmit}>
-          {trips.length === 0 ? (
-            <p className="text-[13px] text-ink-muted">
-              Crée d'abord un trip pour pouvoir lui ajouter des étapes.
-            </p>
-          ) : (
-            <select name="tripUri" required defaultValue="">
-              <option value="" disabled>
-                Choisir un trip
-              </option>
-              {trips.map((trip) => (
-                <option key={trip.uri} value={trip.uri}>
-                  {trip.value.title}
-                </option>
-              ))}
-            </select>
-          )}
           <input name="title" type="text" />
           <textarea
-            name="body"
+            name="description"
             autoFocus
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Raconte cette étape de ton voyage..."
+            placeholder="What you travel is about !"
             rows={4}
             maxLength={300}
             className="w-full resize-none rounded-lg border-[0.5px] border-line bg-surface-1 p-3 text-[14px] text-ink placeholder:text-ink-muted focus:outline-none"
           />
-          <input name="date" type="date" />
-          <input name="latitude" type="number" placeholder='x' />
-          <input name="longitude" type="number" placeholder='y' />
+          <input name="startDate" type="date" />
 
-          <div className="mt-1 flex items-center justify-between">
-            <span className="text-[11px] text-ink-muted">{text.length}/300</span>
-            {error && <span className="text-[11px] text-red-500">{error}</span>}
-          </div>
 
           <div className="mt-3 flex justify-end gap-2">
             <button
@@ -101,14 +68,14 @@ export function AddStepModal({ onClose }: AddStepModalProps) {
               onClick={onClose}
               className="rounded-full border-[0.5px] border-line px-4 py-2 text-[13px] hover:bg-surface-1"
             >
-              Annuler
+              Cancel
             </button>
             <button
               type="submit"
-              disabled={!text.trim() || isPosting || trips.length === 0}
+              disabled={isPosting}
               className="rounded-full bg-primary px-4 py-2 text-[13px] font-semibold text-surface-0 hover:bg-primary-700 disabled:pointer-events-none disabled:opacity-50"
             >
-              {isPosting ? 'Publication...' : 'Publier'}
+             {isPosting ? 'Creating...' : 'Create'}
             </button>
           </div>
         </form>

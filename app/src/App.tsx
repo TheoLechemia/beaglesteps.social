@@ -3,8 +3,10 @@ import { SideNav } from './components/SideNav';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DiscoverPage } from './pages/DiscoverPage';
 import { TripDetailPage } from './pages/TripDetailPage';
+import { StepDetailPage } from './pages/StepDetailPage';
 import { LoginPage } from './pages/LoginPage';
 import { useAuth } from './context/AuthContext';
+import { UserProfilePage } from './pages/UserProfilePage';
 
 
 function App() {
@@ -19,7 +21,9 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<DiscoverPage />} />
-              <Route path="/trips/:id" element={<TripDetailPage />} />
+              <Route path="/profile/:handle/trip/:rkey" element={<TripDetailPage />} />
+              <Route path="/profile/:handle/step/:rkey" element={<StepDetailPage />} />
+              <Route path="/profile/:handle" element={<UserProfilePage />} />
             </Route>
           </Routes>
         </div>

@@ -8,6 +8,7 @@ type FeedTab = 'discover' | 'following' | 'travels';
 export function DiscoverPage() {
   const [tab, setTab] = useState<FeedTab>('discover');
 
+
   return (
     <div className="flex flex-1 overflow-hidden">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden border-r-[0.5px] border-line">
