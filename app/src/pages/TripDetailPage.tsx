@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { IconArrowLeft, IconChevronDown } from '@tabler/icons-react';
-import { Avatar } from '../components/Avatar';
+import { IconArrowLeft, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { TripStepMap } from '../components/TripStepMap';
 import { Step, type StepEntry } from '../components/Step';
 import { useAuth } from '../context/AuthContext';
-import type { TripEntry } from '../context/UserTripContext';
+import { useUserTrip, type TripEntry } from '../context/UserTripContext';
+import { getRepoAgent } from '../lib/atproto';
 import type { Trip, TripStep } from '../types/trip';
+import { Map } from '../components/Map';
+import { TripStepsRoute } from '../components/TripStepsRoute';
 
 function stepEntryToTripStep(entry: StepEntry, index: number, total: number): TripStep {
   const { title, body, date, location, address, photos } = entry.value;
@@ -51,8 +53,10 @@ function tripEntryToTrip(entry: TripEntry, sortedSteps: StepEntry[], authorHandl
 
 export function TripDetailPage() {
   const { handle, rkey } = useParams<{ handle: string; rkey: string }>();
-  const { agent } = useAuth();
+  const { agent, profile } = useAuth();
+  const { tripFollows, followTrip, unfollowTrip } = useUserTrip();
   const [activeStep, setActiveStep] = useState(0);
+  const [isFollowPending, setIsFollowPending] = useState(false);
   const [remoteTrip, setRemoteTrip] = useState<TripEntry | null>(null);
   const [remoteSteps, setRemoteSteps] = useState<StepEntry[]>([]);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
@@ -80,12 +84,13 @@ export function TripDetailPage() {
 
     agent.com.atproto.identity
       .resolveHandle({ handle })
-      .then(({ data }) =>
-        Promise.all([
-          agent.com.atproto.repo.getRecord({ repo: data.did, collection: 'app.beaglesteps.trip', rkey }),
-          agent.com.atproto.repo.listRecords({ repo: data.did, collection: 'app.beaglesteps.step' }),
-        ]),
-      )
+      .then(async ({ data }) => {
+        const repoAgent = await getRepoAgent(data.did);
+        return Promise.all([
+          repoAgent.com.atproto.repo.getRecord({ repo: data.did, collection: 'app.beaglesteps.trip', rkey }),
+          repoAgent.com.atproto.repo.listRecords({ repo: data.did, collection: 'app.beaglesteps.step' }),
+        ]);
+      })
       .then(([tripRes, stepsRes]) => {
         if (cancelled) return;
         setRemoteTrip(tripRes.data as TripEntry);
@@ -107,19 +112,41 @@ export function TripDetailPage() {
   let sortedStepEntries: StepEntry[] = [];
   if (remoteTrip) {
     const entrySteps = remoteSteps.filter((s) => s.value.tripRef?.uri === remoteTrip.uri);
-    sortedStepEntries = [...entrySteps].sort((a, b) => (a.value.order ?? 0) - (b.value.order ?? 0));
+    sortedStepEntries = [...entrySteps].sort((a, b) =>
+      (a.value.date ?? '').localeCompare(b.value.date ?? '')
+    );
     trip = tripEntryToTrip(remoteTrip, sortedStepEntries, handle ?? '');
   }
 
-  if (!trip && isLoadingRemote) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-ink-muted">
-        <p className="text-[13px]">Loading trip...</p>
-      </div>
-    );
+  const isOwnTrip = !!profile && profile.handle === handle;
+  const existingFollow = remoteTrip
+    ? tripFollows.find((f) => f.value.subject.uri === remoteTrip.uri)
+    : undefined;
+
+  function handleMarkerClick(uri: string) {
+    console.log("asse la ???");
+    
+    const index = sortedStepEntries.findIndex((entry) => entry.uri === uri);
+    if (index === -1) return;
+    setActiveStep(index);
+    stepRefs.current[uri]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  if (!trip) {
+  async function handleToggleFollow() {
+    if (!remoteTrip || isFollowPending) return;
+    setIsFollowPending(true);
+    try {
+      if (existingFollow) {
+        await unfollowTrip(existingFollow);
+      } else {
+        await followTrip({ uri: remoteTrip.uri, cid: remoteTrip.cid });
+      }
+    } finally {
+      setIsFollowPending(false);
+    }
+  }
+
+  if (!trip && !isLoadingRemote) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-ink-muted">
         <p className="text-[13px]">Trip not found.</p>
@@ -130,7 +157,7 @@ export function TripDetailPage() {
     );
   }
 
-  if (trip.steps.length === 0) {
+  if (trip && trip.steps.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-ink-muted">
         <p className="text-[13px]">This trip has no steps yet.</p>
@@ -154,42 +181,53 @@ export function TripDetailPage() {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <TripStepMap steps={trip.steps} activeIndex={activeStep} />
+          <Map>
+            <TripStepsRoute steps={remoteSteps} onMarkerClick={handleMarkerClick} ></TripStepsRoute>
+          </Map>
 
           <div className="flex-1 overflow-y-auto">
           <div className="border-b-[0.5px] border-line p-3">
             <div className="mb-2 flex items-start justify-between gap-2">
               <div>
-                <div className="font-voice text-[19px] leading-tight">{trip.title}</div>
-                <div className="mb-2.5 text-xs text-ink-muted">{trip.subtitle}</div>
+                <div className="font-voice text-[19px] leading-tight">{trip?.title}</div>
+                <div className="mb-2.5 text-xs text-ink-muted">{trip?.subtitle}</div>
               </div>
-              <button
-                type="button"
-                className="shrink-0 rounded border-[0.5px] border-line px-2.5 py-1 text-[11px]"
-              >
-                Follow trip
-              </button>
+              {!isOwnTrip && (
+                <button
+                  type="button"
+                  onClick={handleToggleFollow}
+                  disabled={isFollowPending}
+                  className={`flex shrink-0 cursor-pointer items-center gap-1 rounded-full border-[0.5px] px-3.5 py-1 text-[13px] font-bold disabled:opacity-60 ${
+                    existingFollow
+                      ? 'bg-surface-2'
+                      : 'bg-primary text-white' 
+                  }`}
+                >
+                  {!existingFollow && <IconPlus size={20} />}
+                  {existingFollow ? 'Unfollow' : 'Follow trip'}
+                </button>
+              )}
             </div>
             <div className="mb-2.5 grid grid-cols-4 overflow-hidden rounded-[10px] border-[0.5px] border-line">
               <div className="border-r-[0.5px] border-line px-2.5 py-2 text-center">
-                <div className="text-[15px] font-medium">{trip.stats.distance}</div>
+                <div className="text-[15px] font-medium">{trip?.stats.distance ?? '—'}</div>
                 <div className="text-[10px] text-ink-muted">Distance</div>
               </div>
               <div className="border-r-[0.5px] border-line px-2.5 py-2 text-center">
-                <div className="text-[15px] font-medium">{trip.stats.duration}</div>
+                <div className="text-[15px] font-medium">{trip?.stats.duration ?? '—'}</div>
                 <div className="text-[10px] text-ink-muted">Time</div>
               </div>
               <div className="border-r-[0.5px] border-line px-2.5 py-2 text-center">
-                <div className="text-[15px] font-medium">{trip.steps.length}</div>
+                <div className="text-[15px] font-medium">{trip?.steps.length ?? 0}</div>
                 <div className="text-[10px] text-ink-muted">Steps</div>
               </div>
               <div className="px-2.5 py-2 text-center">
-                <div className="text-[15px] font-medium">{trip.stats.likes}</div>
+                <div className="text-[15px] font-medium">{trip?.stats.likes ?? 0}</div>
                 <div className="text-[10px] text-ink-muted">Likes</div>
               </div>
             </div>
             <div className="mb-2 text-[13px] leading-relaxed text-ink-secondary">
-              {trip.description}
+              {trip?.description}
             </div>
             {/* <div className="flex items-center gap-2 text-[11px] text-ink-muted">
               <div className="flex">
@@ -208,7 +246,7 @@ export function TripDetailPage() {
           </div>
 
           <div className="flex items-center justify-between border-b-[0.5px] border-line bg-surface-2 px-4 py-2">
-            <span className="text-[13px] text-ink-muted">{trip.steps.length} steps</span>
+            <span className="text-[13px] text-ink-muted">{trip?.steps.length ?? 0} steps</span>
             <div className="relative" ref={stepMenuRef}>
               <button
                 type="button"
@@ -240,12 +278,13 @@ export function TripDetailPage() {
             </div>
           </div>
 
-          {feedSteps.map(({ entry }) => (
+          {feedSteps.map(({ entry, index }) => (
             <div
               key={entry.uri}
               ref={(el) => {
                 stepRefs.current[entry.uri] = el;
               }}
+              className={index === activeStep ? 'bg-surface-3' : ''}
             >
               <Step step={entry} authorHandle={handle ?? ''} />
             </div>

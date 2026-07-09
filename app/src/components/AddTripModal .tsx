@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { SubmitEvent } from 'react';
 import { IconX } from '@tabler/icons-react';
 import { useUserTrip } from '../context/UserTripContext';
+import { FormInput } from './FormField';
 
 interface AddTripModalProps {
   onClose: () => void;
@@ -25,11 +26,12 @@ export function AddTripModal({ onClose }: AddTripModalProps) {
         title: formData.get('title') as string,
         description: formData.get('description') as string,
         startDate: formData.get('startDate') as string,
+        endDate: formData.get('endDate') as string,
         createdAt: new Date().toISOString(),
       });
       onClose();
     } catch {
-      setError("La publication a échoué. Réessaie.");
+      setError('Failed to publish. Please try again.');
     } finally {
       setIsPosting(false);
     }
@@ -37,7 +39,7 @@ export function AddTripModal({ onClose }: AddTripModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-[440px] rounded-2xl border-[0.5px] border-line bg-surface-0 p-4 shadow-xl">
+      <div className="w-full max-w-[440px] rounded-2xl border-[0.5px] border-line bg-surface-0 p-4 shadow-xl md:max-w-2xl">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-voice text-[17px]">Create a trip</h2>
           <button
@@ -49,8 +51,8 @@ export function AddTripModal({ onClose }: AddTripModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <input name="title" type="text" />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <FormInput name="title" type="text" placeholder="Title" />
           <textarea
             name="description"
             autoFocus
@@ -59,8 +61,14 @@ export function AddTripModal({ onClose }: AddTripModalProps) {
             maxLength={300}
             className="w-full resize-none rounded-lg border-[0.5px] border-line bg-surface-1 p-3 text-[14px] text-ink placeholder:text-ink-muted focus:outline-none"
           />
-          <input name="startDate" type="date" />
-
+          <div>
+            <label className="mb-1 block text-[12px] text-ink-muted">Start date</label>
+            <FormInput name="startDate" type="date" />
+          </div>
+          <div>
+            <label className="mb-1 block text-[12px] text-ink-muted">End date</label>
+            <FormInput name="endDate" type="date" />
+          </div>
 
           <div className="mt-3 flex justify-end gap-2">
             <button

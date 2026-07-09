@@ -1,0 +1,8 @@
+{
+  "$type": "app.beaglesteps.tripFollow",
+  "subject": {
+    "uri": "at://did:plc:ebvbdew5dfys2os6dz6u2qde/app.beaglesteps.trip/abc123",
+    "cid": "bafyreiabc..."
+  },
+  "createdAt": "2026-07-08T10:00:00Z"
+}

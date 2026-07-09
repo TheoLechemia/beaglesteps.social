@@ -9,8 +9,13 @@ export interface StepRecord {
   location?: { latitude: string; longitude: string };
   address?: { locality?: string; country?: string };
   photos?: { ref: { $link: string }; mimeType: string; size: number }[];
-  order?: number;
   crossPostRef?: { uri: string; cid: string };
+}
+
+/** Shape of the `value` field of an app.beaglesteps.tripFollow AT Proto record. */
+export interface TripFollowRecord {
+  subject: { uri: string; cid: string };
+  createdAt: string;
 }
 
 /** Shape of the `value` field of an app.beaglesteps.trip AT Proto record. */

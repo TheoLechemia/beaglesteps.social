@@ -14,7 +14,7 @@ function App() {
 
   return (
     <div className="flex h-screen justify-center overflow-hidden bg-surface-0 font-sans text-[14px] text-ink">
-      <div className="flex h-full w-full max-w-400 overflow-hidden">
+      <div className="flex h-full w-full max-w-6xl overflow-hidden">
         <div className="flex min-w-0 flex-1 overflow-hidden">
         {isAuthenticated && <SideNav />}
           <Routes>

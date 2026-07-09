@@ -5,6 +5,7 @@
   --color-surface-0: #ffffff;
   --color-surface-1: #f6f6f7;
   --color-surface-2: #fafafa;
+  --color-surface-3: #e9e9eb;
   --color-line: #e6e6e6;
 
   --color-ink: #14151a;
@@ -44,6 +45,62 @@ body {
   margin: 0;
 }
 
-.test {
-  color: #2da00ade;
+/* Pulsing halo behind the last trip step's marker on the map. */
+@keyframes marker-halo-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
+
+.marker-halo {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.marker-halo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  animation: marker-halo-pulse 1.6s ease-out infinite;
+}
+
+.marker-halo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  border: 2px solid white;
+}
+
+/* Static marker dot for trip steps other than the last one. */
+.marker-dot {
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  border: 2px solid white;
+  cursor: pointer;
+}
+
+/* Static marker dot for the "current" step, no pulsing halo. */
+.marker-current {
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  border: 2px solid white;
+  cursor: pointer;
+}
+

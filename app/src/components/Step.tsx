@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { SubmitEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IconCalendar, IconHeart, IconMapPin, IconMessageCircle, IconPhoto, IconTrash } from '@tabler/icons-react';
 import { AppBskyFeedDefs } from '@atproto/api';
 import type { ComAtprotoRepoListRecords } from '@atproto/api';
 import type { StepRecord } from '../types/trip';
 import { useAuth } from '../context/AuthContext';
+import { ImageCarousel } from './ImageCarousel';
 
 export type StepEntry = ComAtprotoRepoListRecords.Record & { value: StepRecord };
 
@@ -16,9 +18,10 @@ interface StepProps {
   defaultExpanded?: boolean;
 }
 
-export function Step({ step, onDelete, defaultExpanded = false }: StepProps) {
-  const { title, body, date, location, photos, crossPostRef } = step.value;
+export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: StepProps) {
+  const { title, body, date, location, photos, tripRef, crossPostRef } = step.value;
   const { agent } = useAuth();
+  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [postView, setPostView] = useState<AppBskyFeedDefs.PostView | null>(null);
   const [replies, setReplies] = useState<AppBskyFeedDefs.ThreadViewPost[]>([]);
@@ -29,6 +32,15 @@ export function Step({ step, onDelete, defaultExpanded = false }: StepProps) {
   const locationLabel = location?.latitude && location.longitude
       ? `${location.latitude}, ${location.longitude}`
       : null;
+
+  const authorDid = step.uri.split('/')[2];
+  const tripHref = `/profile/${authorHandle}/trip/${tripRef?.uri.split('/').pop()}`;
+  const photoUrls = (photos ?? []).map((photo) => {
+    // `photo.ref` is `{ $link }` right after local creation, but the SDK decodes
+    // it into a real `CID` instance once round-tripped through listRecords/getRecord.
+    const cid = photo.ref.$link ?? String(photo.ref);
+    return `https://cdn.bsky.app/img/feed_thumbnail/plain/${authorDid}/${cid}`;
+  });
 
   const loadThread = useCallback(() => {
     if (!agent || !crossPostRef) return;
@@ -80,7 +92,10 @@ export function Step({ step, onDelete, defaultExpanded = false }: StepProps) {
   }
 
   return (
-    <div className="border-b-[0.5px] border-line px-4 py-3">
+    <div
+      onClick={() => tripRef && navigate(tripHref)}
+      className="cursor-pointer border-b-[0.5px] border-line px-4 py-3 hover:bg-surface-3"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-1 font-voice text-[16px] leading-tight">
@@ -108,12 +123,16 @@ export function Step({ step, onDelete, defaultExpanded = false }: StepProps) {
               </span>
             )}
           </div>
+          {photoUrls.length > 0 && <ImageCarousel images={photoUrls} />}
           {crossPostRef && (
             <button
               type="button"
-              onClick={() => setIsExpanded((v) => !v)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsExpanded((v) => !v);
+              }}
               className={`mt-2 flex cursor-pointer items-center gap-1 text-[15px] ${
-                isExpanded ? 'text-primary' : 'text-ink-muted hover:text-primary'
+                isExpanded ? 'text-black' : 'text-ink-muted hover:text-black'
               }`}
             >
               <IconMessageCircle size={18} />
@@ -124,9 +143,12 @@ export function Step({ step, onDelete, defaultExpanded = false }: StepProps) {
         {onDelete && (
           <button
             type="button"
-            onClick={() => onDelete(step)}
-            className="cursor-pointer text-ink-muted hover:text-red-500"
-            aria-label="Supprimer le step"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(step);
+            }}
+            className="shrink-0 cursor-pointer text-ink-muted hover:text-red-500"
+            aria-label="Delete step"
           >
             <IconTrash size={16} />
           </button>
@@ -134,7 +156,10 @@ export function Step({ step, onDelete, defaultExpanded = false }: StepProps) {
       </div>
 
       {isExpanded && crossPostRef && (
-        <div className="mt-3 border-t-[0.5px] border-line pt-3 bg-surface-1 p-2">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="mt-3 border-t-[0.5px] border-line pt-3 bg-surface-1 p-2"
+        >
           <div className="mb-3 flex items-center gap-4">
             <button
               type="button"

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useAuth } from '../context/AuthContext';
 import { Step, type StepEntry } from '../components/Step';
+import { getRepoAgent } from '../lib/atproto';
 
 export function StepDetailPage() {
   const { handle, rkey } = useParams<{ handle: string; rkey: string }>();
@@ -17,7 +18,10 @@ export function StepDetailPage() {
 
     agent.com.atproto.identity
       .resolveHandle({ handle })
-      .then(({ data }) => agent.com.atproto.repo.getRecord({ repo: data.did, collection: 'app.beaglesteps.step', rkey }))
+      .then(async ({ data }) => {
+        const repoAgent = await getRepoAgent(data.did);
+        return repoAgent.com.atproto.repo.getRecord({ repo: data.did, collection: 'app.beaglesteps.step', rkey });
+      })
       .then(({ data }) => {
         if (cancelled) return;
         setStep(data as StepEntry);

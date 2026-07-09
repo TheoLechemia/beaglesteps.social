@@ -1,7 +1,7 @@
 import type { Trip } from '../types/trip';
 
 interface MapSidebarProps {
-  trips: Trip[];
+  trips: Pick<Trip, 'id' | 'mapPin'>[];
   width?: number;
 }
 

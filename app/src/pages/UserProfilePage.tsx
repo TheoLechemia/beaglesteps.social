@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Link } from 'react-router-dom';
 import { useAuth } from "../context/AuthContext";
 import { useUserTrip } from "../context/UserTripContext";
 import { Step } from "../components/Step";
+import { TripCard } from "../components/TripCard";
 
 export function UserProfilePage () {
     const { profile } = useAuth()
@@ -55,30 +55,23 @@ export function UserProfilePage () {
                         Trips
                     </button>
             </div>
-            {tab === 'steps' && (
-                <div>
-                    {steps.map((step) => (
-                        <Step key={step.uri} step={step} authorHandle={profile?.handle ?? ''} onDelete={deleteStep} />
-                    ))}
-                </div>
-            )}
-            {tab === 'trips' && (
-                <div className="flex border-b-[0.5px] border-line px-4 py-3" >
-                    {trips.map((trip) => (
-                        <Link
-                            key={trip.uri}
-                            to={`/profile/${profile?.handle}/trip/${trip.uri.split('/').pop()}`}
-                        >
-                            <div>
-                                <div> {trip.value.title}</div>
-                                <div> {trip.value.description}</div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            )}
-
+            <div className="flex-1 overflow-y-auto">
+                {tab === 'steps' && steps.map((step) => (
+                    <Step key={step.uri} step={step} authorHandle={profile?.handle ?? ''} onDelete={deleteStep} />
+                ))}
+                {tab === 'trips' && trips.map((trip) => (
+                    <TripCard
+                        key={trip.uri}
+                        to={`/profile/${profile?.handle}/trip/${trip.uri.split('/').pop()}`}
+                        title={trip.value.title}
+                        description={trip.value.description}
+                        status={trip.value.endDate ? 'ended' : 'ongoing'}
+                        stepsCount={steps.filter((s) => s.value.tripRef?.uri === trip.uri).length}
+                    />
+                ))}
             </div>
+
+        </div>
         <div className="w-60 shrink-0" aria-hidden />
     </div>
     );

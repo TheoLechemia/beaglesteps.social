@@ -4,7 +4,8 @@
       "Bash(npm -v)",
       "Bash(grep -Ei \"^Icon\\(Search|Bell|MapPin|Route|Heart|Photo|ArrowLeft|ChevronLeft|ChevronRight|ChevronDown|Calendar|CircleFilled\\)\\\\.mjs$\")",
       "Skill(run)",
-      "Bash(uv add *)"
+      "Bash(uv add *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

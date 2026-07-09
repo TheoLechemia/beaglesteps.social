@@ -5,6 +5,5 @@
   "date": "datetime",
   "location": { "$type": "community.lexicon.location.geo" },
   "photos": "blob[]",
-  "order": "integer",
   "crossPostRef": "strongRef → app.bsky.feed.post (nullable)"
 }
