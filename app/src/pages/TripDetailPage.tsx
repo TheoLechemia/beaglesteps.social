@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { IconArrowLeft, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { TripStepMap } from '../components/TripStepMap';
 import { Step, type StepEntry } from '../components/Step';
 import { useAuth } from '../context/AuthContext';
 import { useUserTrip, type TripEntry } from '../context/UserTripContext';
-import { getRepoAgent } from '../lib/atproto';
+import { getRepoAgent, publicAgent } from '../lib/atproto';
 import type { Trip, TripStep } from '../types/trip';
 import { Map } from '../components/Map';
 import { TripStepsRoute } from '../components/TripStepsRoute';
@@ -54,6 +54,8 @@ function tripEntryToTrip(entry: TripEntry, sortedSteps: StepEntry[], authorHandl
 export function TripDetailPage() {
   const { handle, rkey } = useParams<{ handle: string; rkey: string }>();
   const { agent, profile } = useAuth();
+  const readAgent = agent ?? publicAgent;
+  const navigate = useNavigate();
   const { tripFollows, followTrip, unfollowTrip } = useUserTrip();
   const [activeStep, setActiveStep] = useState(0);
   const [isFollowPending, setIsFollowPending] = useState(false);
@@ -78,11 +80,11 @@ export function TripDetailPage() {
   }, [isStepMenuOpen]);
 
   useEffect(() => {
-    if (!agent || !handle || !rkey) return;
+    if (!handle || !rkey) return;
     let cancelled = false;
     setIsLoadingRemote(true);
 
-    agent.com.atproto.identity
+    readAgent.com.atproto.identity
       .resolveHandle({ handle })
       .then(async ({ data }) => {
         const repoAgent = await getRepoAgent(data.did);
@@ -106,7 +108,7 @@ export function TripDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [agent, handle, rkey]);
+  }, [readAgent, handle, rkey]);
 
   let trip: Trip | undefined;
   let sortedStepEntries: StepEntry[] = [];
@@ -134,6 +136,10 @@ export function TripDetailPage() {
 
   async function handleToggleFollow() {
     if (!remoteTrip || isFollowPending) return;
+    if (!profile) {
+      navigate('/login');
+      return;
+    }
     setIsFollowPending(true);
     try {
       if (existingFollow) {

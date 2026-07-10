@@ -12,7 +12,7 @@ export function SideNav() {
   const [isAddStepOpen, setIsAddStepOpen] = useState(false);
   const [isAddTripOpen, setIsAddTripOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { logout, profile } = useAuth()
+  const { logout, profile, isAuthenticated } = useAuth()
 
 
   useEffect(() => {
@@ -28,8 +28,30 @@ export function SideNav() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMenuOpen]);
 
+  if (!isAuthenticated) {
+    return (
+      <nav className="hidden md:flex w-56 shrink-0 flex-col gap-1 border-r-[0.5px] border-line p-4">
+        <div className="mb-6 px-1 font-voice text-[20px] leading-tight">
+          BeagleSteps<span className="text-primary">.social</span>
+        </div>
+        <Link
+          to="/login"
+          className="flex items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-[15px] font-semibold text-surface-0 hover:bg-primary-700"
+        >
+          Log in
+        </Link>
+        <Link
+          to="/login"
+          className="mt-2 flex items-center justify-center gap-2 rounded-full border-2 py-2.5 text-[15px] font-semibold hover:bg-black hover:text-white"
+        >
+          Create account
+        </Link>
+      </nav>
+    );
+  }
+
   return (
-    <nav className="flex w-56 shrink-0 flex-col gap-1 border-r-[0.5px] border-line p-4">
+    <nav className="hidden md:flex w-56 shrink-0 flex-col gap-1 border-r-[0.5px] border-line p-4">
       <div className="relative mb-4" ref={menuRef}>
         <button
           type="button"

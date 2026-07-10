@@ -6,6 +6,7 @@ import { AppBskyFeedDefs } from '@atproto/api';
 import type { ComAtprotoRepoListRecords } from '@atproto/api';
 import type { StepRecord } from '../types/trip';
 import { useAuth } from '../context/AuthContext';
+import { publicAgent } from '../lib/atproto';
 import { ImageCarousel } from './ImageCarousel';
 
 export type StepEntry = ComAtprotoRepoListRecords.Record & { value: StepRecord };
@@ -21,6 +22,7 @@ interface StepProps {
 export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: StepProps) {
   const { title, body, date, location, photos, tripRef, crossPostRef } = step.value;
   const { agent } = useAuth();
+  const readAgent = agent ?? publicAgent;
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [postView, setPostView] = useState<AppBskyFeedDefs.PostView | null>(null);
@@ -43,9 +45,9 @@ export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: 
   });
 
   const loadThread = useCallback(() => {
-    if (!agent || !crossPostRef) return;
+    if (!crossPostRef) return;
     setIsLoadingThread(true);
-    agent
+    readAgent
       .getPostThread({ uri: crossPostRef.uri, depth: 50 })
       .then(({ data }) => {
         if (!AppBskyFeedDefs.isThreadViewPost(data.thread)) {
@@ -57,7 +59,7 @@ export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: 
         setReplies((data.thread.replies ?? []).filter(AppBskyFeedDefs.isThreadViewPost));
       })
       .finally(() => setIsLoadingThread(false));
-  }, [agent, crossPostRef]);
+  }, [readAgent, crossPostRef]);
 
   useEffect(() => {
     if (isExpanded && crossPostRef && postView === null) {
@@ -66,7 +68,11 @@ export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: 
   }, [isExpanded, crossPostRef, postView, loadThread]);
 
   async function handleToggleLike() {
-    if (!agent || !postView) return;
+    if (!agent) {
+      navigate('/login');
+      return;
+    }
+    if (!postView) return;
     if (postView.viewer?.like) {
       const likeUri = postView.viewer.like;
       setPostView((p) => p && { ...p, likeCount: Math.max(0, (p.likeCount ?? 1) - 1), viewer: { ...p.viewer, like: undefined } });
@@ -177,25 +183,35 @@ export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: 
             </span>
           </div>
 
-          <form onSubmit={handleSubmitComment} className="mb-3">
-            <textarea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write a comment..."
-              rows={2}
-              maxLength={300}
-              className="w-full resize-none rounded-lg border-[0.5px] border-line bg-white p-2.5 text-[13px] text-ink placeholder:text-ink-muted focus:outline-none"
-            />
-            <div className="mt-2 flex justify-end">
-              <button
-                type="submit"
-                disabled={!commentText.trim() || isCommenting}
-                className="rounded-full bg-primary px-4 py-1.5 text-[13px] font-semibold text-surface-0 hover:bg-primary-700 disabled:pointer-events-none disabled:opacity-50"
-              >
-                {isCommenting ? 'Posting...' : 'Comment'}
-              </button>
-            </div>
-          </form>
+          {agent ? (
+            <form onSubmit={handleSubmitComment} className="mb-3">
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Write a comment..."
+                rows={2}
+                maxLength={300}
+                className="w-full resize-none rounded-lg border-[0.5px] border-line bg-white p-2.5 text-[13px] text-ink placeholder:text-ink-muted focus:outline-none"
+              />
+              <div className="mt-2 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={!commentText.trim() || isCommenting}
+                  className="rounded-full bg-primary px-4 py-1.5 text-[13px] font-semibold text-surface-0 hover:bg-primary-700 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {isCommenting ? 'Posting...' : 'Comment'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="mb-3 w-full cursor-pointer rounded-lg border-[0.5px] border-line bg-white p-2.5 text-left text-[13px] text-ink-muted hover:text-ink"
+            >
+              Log in to comment
+            </button>
+          )}
 
           {isLoadingThread && replies.length === 0 ? (
             <div className="text-[13px] text-ink-muted">Loading comments...</div>

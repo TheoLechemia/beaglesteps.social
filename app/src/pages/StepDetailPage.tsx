@@ -3,20 +3,21 @@ import { Link, useParams } from 'react-router-dom';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useAuth } from '../context/AuthContext';
 import { Step, type StepEntry } from '../components/Step';
-import { getRepoAgent } from '../lib/atproto';
+import { getRepoAgent, publicAgent } from '../lib/atproto';
 
 export function StepDetailPage() {
   const { handle, rkey } = useParams<{ handle: string; rkey: string }>();
   const { agent } = useAuth();
+  const readAgent = agent ?? publicAgent;
   const [step, setStep] = useState<StepEntry | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!agent || !handle || !rkey) return;
+    if (!handle || !rkey) return;
     let cancelled = false;
     setIsLoading(true);
 
-    agent.com.atproto.identity
+    readAgent.com.atproto.identity
       .resolveHandle({ handle })
       .then(async ({ data }) => {
         const repoAgent = await getRepoAgent(data.did);
@@ -36,7 +37,7 @@ export function StepDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [agent, handle, rkey]);
+  }, [readAgent, handle, rkey]);
 
   if (isLoading) {
     return (

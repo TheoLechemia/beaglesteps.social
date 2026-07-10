@@ -13,6 +13,9 @@ async function fetchDidDocument(did: string): Promise<DidDocument> {
   return res.json();
 }
 
+/** Unauthenticated agent for public reads (profiles, threads, handle resolution) when no session is active. */
+export const publicAgent = new Agent('https://public.api.bsky.app');
+
 const repoAgentCache = new Map<string, Promise<Agent>>();
 
 /**

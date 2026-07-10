@@ -121,11 +121,17 @@ export function TripStepsRoute({ steps, onMarkerClick }: TripStepsRouteProps) {
       map.fitBounds(bounds, { padding: 48, duration: 1000 });
 
     return () => {
-      map.off('load', addRouteLayer);
       markers.forEach((marker) => marker.remove());
-      if (map.getLayer(ROUTE_ARROW_LAYER_ID)) map.removeLayer(ROUTE_ARROW_LAYER_ID);
-      if (map.getLayer(ROUTE_SOURCE_ID)) map.removeLayer(ROUTE_SOURCE_ID);
-      if (map.getSource(ROUTE_SOURCE_ID)) map.removeSource(ROUTE_SOURCE_ID);
+      // The map may already be torn down (e.g. navigating away before the style
+      // finished loading), in which case these calls throw — nothing left to clean up.
+      try {
+        map.off('load', addRouteLayer);
+        if (map.getLayer(ROUTE_ARROW_LAYER_ID)) map.removeLayer(ROUTE_ARROW_LAYER_ID);
+        if (map.getLayer(ROUTE_SOURCE_ID)) map.removeLayer(ROUTE_SOURCE_ID);
+        if (map.getSource(ROUTE_SOURCE_ID)) map.removeSource(ROUTE_SOURCE_ID);
+      } catch {
+        // Map already removed.
+      }
     };
   }, [map, steps]);
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { TripCard } from '../components/TripCard';
 import { MapSidebar } from '../components/MapSidebar';
 import { Step, type StepEntry } from '../components/Step';
@@ -19,7 +20,7 @@ interface FollowedTrip {
 
 export function DiscoverPage() {
   const [tab, setTab] = useState<FeedTab>('following');
-  const { agent } = useAuth();
+  const { agent, isAuthenticated } = useAuth();
   const { tripFollows } = useUserTrip();
   const [followedTrips, setFollowedTrips] = useState<FollowedTrip[]>([]);
   const [isLoadingFollowed, setIsLoadingFollowed] = useState(false);
@@ -149,15 +150,20 @@ export function DiscoverPage() {
         )}
         {tab === 'following' && (
           <div className="flex-1 overflow-y-auto">
-            {isLoadingFollowed && (
+            {!isAuthenticated && (
+              <div className="px-5 py-10 text-center text-[13px] text-ink-muted">
+                <Link to="/login" className="text-primary">Log in</Link> to see the trips you follow.
+              </div>
+            )}
+            {isAuthenticated && isLoadingFollowed && (
               <div className="px-5 py-10 text-center text-[13px] text-ink-muted">Loading...</div>
             )}
-            {!isLoadingFollowed && followedSteps.length === 0 && (
+            {isAuthenticated && !isLoadingFollowed && followedSteps.length === 0 && (
               <div className="px-5 py-10 text-center text-[13px] text-ink-muted">
                 follow travels to see the last steps in this feed
               </div>
             )}
-            {followedSteps.map(({ step, handle }) => (
+            {isAuthenticated && followedSteps.map(({ step, handle }) => (
               <Step key={step.uri} step={step} authorHandle={handle} />
             ))}
           </div>
