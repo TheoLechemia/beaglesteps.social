@@ -9,15 +9,21 @@ import { UserProfilePage } from './pages/UserProfilePage';
 
 function App() {
   const { pathname } = useLocation();
-  const isLoginPage = pathname === '/login';
+
+  if (pathname === '/login') {
+    return (
+      <div className="h-screen overflow-hidden bg-surface-0 font-sans text-[14px] text-ink">
+        <LoginPage />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen justify-center overflow-hidden bg-surface-0 font-sans text-[14px] text-ink">
       <div className="flex h-full w-full max-w-6xl overflow-hidden">
         <div className="flex min-w-0 flex-1 overflow-hidden">
-          {!isLoginPage && <SideNav />}
+          <SideNav />
           <Routes>
-            <Route path="/login" element={<LoginPage />} />
             <Route path="/" element={<DiscoverPage />} />
             <Route path="/profile/:handle/trip/:rkey" element={<TripDetailPage />} />
             <Route path="/profile/:handle/step/:rkey" element={<StepDetailPage />} />

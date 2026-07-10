@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, type ReactNode } from 'react';
-import maplibregl, { type LngLatLike } from 'maplibre-gl';
+import maplibregl, { type LngLatLike, type SkySpecification } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapContext } from '../context/MapContext';
 
@@ -8,6 +8,7 @@ interface MapProps {
   center?: LngLatLike;
   style?: string;
   zoom?: number;
+  sky?: SkySpecification;
   children?: ReactNode;
 }
 
@@ -16,6 +17,7 @@ export function Map({
   center = [0, 0],
   style = 'https://tiles.openfreemap.org/styles/liberty',
   zoom = 1,
+  sky,
   children,
 }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,6 +44,7 @@ export function Map({
 
     instance.on('load', () => {
       instance.setProjection({ type: 'globe' });
+      if (sky) instance.setSky(sky);
       rotationFrame = requestAnimationFrame(spinGlobe);
     });
     setMap(instance);
