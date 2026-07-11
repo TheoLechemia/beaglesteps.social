@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TripCard } from '../components/TripCard';
-import { MapSidebar } from '../components/MapSidebar';
 import { Step, type StepEntry } from '../components/Step';
 import { useAuth } from '../context/AuthContext';
 import { useUserTrip } from '../context/UserTripContext';
 import { getRepoAgent } from '../lib/atproto';
 import type { TripEntry } from '../context/UserTripContext';
+import { type AppBskyActorDefs } from '@atproto/api'
 
-type FeedTab = 'discover' | 'following' | 'travels';
+type FeedTab = 'following' | 'travels';
 
-const MAP_PIN_COLORS = ['#1D9E75', '#993C1D', '#534AB7', '#B7862F'];
 
 interface FollowedTrip {
   trip: TripEntry;
-  handle: string;
+  profile: AppBskyActorDefs.ProfileViewDetailed;
   steps: StepEntry[];
 }
 
@@ -34,22 +33,25 @@ export function DiscoverPage() {
     let cancelled = false;
     setIsLoadingFollowed(true);
 
+    // load all steps 
     Promise.all(
       tripFollows.map(async (follow) => {
         const { uri } = follow.value.subject;
         const did = uri.split('/')[2];
         const rkey = uri.split('/').pop()!;
         const repoAgent = await getRepoAgent(did);
+        
         const [tripRes, stepsRes, profileRes] = await Promise.all([
           repoAgent.com.atproto.repo.getRecord({ repo: did, collection: 'app.beaglesteps.trip', rkey }),
           repoAgent.com.atproto.repo.listRecords({ repo: did, collection: 'app.beaglesteps.step' }),
           agent.getProfile({ actor: did }),
         ]);
+
         const trip = tripRes.data as TripEntry;
         const steps = (stepsRes.data.records as StepEntry[]).filter(
           (s) => s.value.tripRef?.uri === trip.uri,
         );
-        return { trip, steps, handle: profileRes.data.handle };
+        return { trip, steps, profile: profileRes.data };
       }),
     )
       .then((results) => {
@@ -69,18 +71,10 @@ export function DiscoverPage() {
   }, [agent, tripFollows]);
 
   const followedSteps = followedTrips
-    .flatMap(({ steps, handle }) => steps.map((step) => ({ step, handle })))
+    .flatMap(({ trip, steps, profile }) => steps.map((step) => ({ step, profile, tripTitle: trip.value.title })))
     .sort((a, b) => (b.step.value.date ?? '').localeCompare(a.step.value.date ?? ''));
 
-  const mapPins = followedTrips.map(({ trip }, i) => ({
-    id: trip.uri,
-    mapPin: {
-      top: `${20 + ((i * 17) % 60)}%`,
-      left: `${15 + ((i * 23) % 70)}%`,
-      color: MAP_PIN_COLORS[i % MAP_PIN_COLORS.length],
-      label: trip.value.title,
-    },
-  }));
+
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -136,14 +130,15 @@ export function DiscoverPage() {
                 Follow a trip to see it here.
               </div>
             )}
-            {followedTrips.map(({ trip, handle, steps }) => (
+            {followedTrips.map(({ trip, profile, steps }) => (
               <TripCard
                 key={trip.uri}
-                to={`/profile/${handle}/trip/${trip.uri.split('/').pop()}`}
+                to={`/profile/${profile.handle}/trip/${trip.uri.split('/').pop()}`}
                 title={trip.value.title}
                 description={trip.value.description}
                 status={trip.value.endDate ? 'ended' : 'ongoing'}
                 stepsCount={steps.length}
+                authorProfile={profile}
               />
             ))}
           </div>
@@ -163,8 +158,8 @@ export function DiscoverPage() {
                 follow travels to see the last steps in this feed
               </div>
             )}
-            {isAuthenticated && followedSteps.map(({ step, handle }) => (
-              <Step key={step.uri} step={step} authorHandle={handle} />
+            {isAuthenticated && followedSteps.map(({ step, profile, tripTitle }) => (
+              <Step key={step.uri} step={step} authorProfile={profile} tripTitle={tripTitle} />
             ))}
           </div>
         )}
@@ -177,7 +172,6 @@ export function DiscoverPage() {
         )}
       </div>
 
-      <MapSidebar trips={mapPins} />
     </div>
   );
 }

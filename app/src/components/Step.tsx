@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { SubmitEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IconCalendar, IconHeart, IconMapPin, IconMessageCircle, IconPhoto, IconTrash } from '@tabler/icons-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { IconCalendar, IconHeart, IconMapPin, IconMessageCircle, IconPhoto, IconRoute, IconTrash } from '@tabler/icons-react';
 import { AppBskyFeedDefs } from '@atproto/api';
-import type { ComAtprotoRepoListRecords } from '@atproto/api';
+import type { AppBskyActorDefs, ComAtprotoRepoListRecords } from '@atproto/api';
 import type { StepRecord } from '../types/trip';
 import { useAuth } from '../context/AuthContext';
 import { publicAgent } from '../lib/atproto';
@@ -13,13 +13,14 @@ export type StepEntry = ComAtprotoRepoListRecords.Record & { value: StepRecord }
 
 interface StepProps {
   step: StepEntry;
-  authorHandle: string;
+  authorProfile?: AppBskyActorDefs.ProfileViewDetailed;
+  tripTitle?: string;
   onDelete?: (step: StepEntry) => void;
   /** Render already expanded (used by the /profile/:handle/step/:rkey permalink). */
   defaultExpanded?: boolean;
 }
 
-export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: StepProps) {
+export function Step({ step, authorProfile, tripTitle, onDelete, defaultExpanded = false }: StepProps) {
   const { title, body, date, location, photos, tripRef, crossPostRef } = step.value;
   const { agent } = useAuth();
   const readAgent = agent ?? publicAgent;
@@ -36,7 +37,8 @@ export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: 
       : null;
 
   const authorDid = step.uri.split('/')[2];
-  const tripHref = `/profile/${authorHandle}/trip/${tripRef?.uri.split('/').pop()}`;
+  const profileHref = authorProfile ? `/profile/${authorProfile.handle}` : undefined;
+  const tripHref = authorProfile && tripRef ? `/profile/${authorProfile.handle}/trip/${tripRef.uri.split('/').pop()}` : undefined;
   const photoUrls = (photos ?? []).map((photo) => {
     // `photo.ref` is `{ $link }` right after local creation, but the SDK decodes
     // it into a real `CID` instance once round-tripped through listRecords/getRecord.
@@ -99,66 +101,92 @@ export function Step({ step, authorHandle, onDelete, defaultExpanded = false }: 
 
   return (
     <div
-      onClick={() => tripRef && navigate(tripHref)}
-      className="cursor-pointer border-b-[0.5px] border-line px-4 py-3 hover:bg-surface-3"
+      onClick={() => tripHref && navigate(tripHref)}
+      className={`border-b-[0.5px] border-line px-4 py-3 hover:bg-surface-2 ${tripHref ? 'cursor-pointer' : ''}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 font-voice text-[16px] leading-tight">
-            {title || 'Sans titre'}
-          </div>
-          {body && (
-            <div className="mb-2 text-[13px] leading-normal text-ink-secondary">
-              {body}
+      <div className="flex gap-2">
+        {authorProfile && profileHref && (
+          <Link to={profileHref} onClick={(e) => e.stopPropagation()} className="shrink-0">
+            <img src={authorProfile.avatar} className='rounded-full w-8 h-8' alt="" />
+          </Link>
+        )}
+
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {authorProfile && profileHref && (
+              <Link
+                to={profileHref}
+                onClick={(e) => e.stopPropagation()}
+                className="mb-1 block text-[12px] text-ink-muted hover:underline"
+              >
+                {authorProfile.displayName && <span className="font-bold">{authorProfile.displayName}</span>}{authorProfile.displayName && ' - '}{authorProfile.handle}
+              </Link>
+            )}
+            {tripTitle && tripHref && (
+              <Link
+                to={tripHref}
+                onClick={(e) => e.stopPropagation()}
+                className="mb-1 flex items-center gap-1 text-[11px] text-primary hover:underline"
+              >
+                <IconRoute size={12} /> {tripTitle}
+              </Link>
+            )}
+            <div className="mb-1 font-voice text-[16px] leading-tight">
+              {title || 'Sans titre'}
             </div>
-          )}
-          <div className="flex flex-wrap items-center gap-3 text-[11px] text-ink-muted">
-            {date && (
-              <span className="flex items-center gap-1">
-                <IconCalendar size={11} /> {date}
-              </span>
+            {body && (
+              <div className="mb-2 text-[13px] leading-normal text-ink-secondary">
+                {body}
+              </div>
             )}
-            {locationLabel && (
-              <span className="flex items-center gap-1">
-                <IconMapPin size={11} /> {locationLabel}
-              </span>
-            )}
-            {photos && photos.length > 0 && (
-              <span className="flex items-center gap-1">
-                <IconPhoto size={11} /> {photos.length}
-              </span>
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-ink-muted">
+              {date && (
+                <span className="flex items-center gap-1">
+                  <IconCalendar size={11} /> {date}
+                </span>
+              )}
+              {locationLabel && (
+                <span className="flex items-center gap-1">
+                  <IconMapPin size={11} /> {locationLabel}
+                </span>
+              )}
+              {photos && photos.length > 0 && (
+                <span className="flex items-center gap-1">
+                  <IconPhoto size={11} /> {photos.length}
+                </span>
+              )}
+            </div>
+            {photoUrls.length > 0 && <ImageCarousel images={photoUrls} />}
+            {crossPostRef && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded((v) => !v);
+                }}
+                className={`mt-2 flex cursor-pointer items-center gap-1 text-[15px] ${
+                  isExpanded ? 'text-black' : 'text-ink-muted hover:text-black'
+                }`}
+              >
+                <IconMessageCircle size={18} />
+                Comment
+              </button>
             )}
           </div>
-          {photoUrls.length > 0 && <ImageCarousel images={photoUrls} />}
-          {crossPostRef && (
+          {onDelete && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsExpanded((v) => !v);
+                onDelete(step);
               }}
-              className={`mt-2 flex cursor-pointer items-center gap-1 text-[15px] ${
-                isExpanded ? 'text-black' : 'text-ink-muted hover:text-black'
-              }`}
+              className="shrink-0 cursor-pointer text-ink-muted hover:text-red-500"
+              aria-label="Delete step"
             >
-              <IconMessageCircle size={18} />
-              Comment
+              <IconTrash size={16} />
             </button>
           )}
         </div>
-        {onDelete && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(step);
-            }}
-            className="shrink-0 cursor-pointer text-ink-muted hover:text-red-500"
-            aria-label="Delete step"
-          >
-            <IconTrash size={16} />
-          </button>
-        )}
       </div>
 
       {isExpanded && crossPostRef && (

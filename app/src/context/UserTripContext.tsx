@@ -49,6 +49,7 @@ export function UserTripProvider({ children }: { children: ReactNode }) {
       agent.com.atproto.repo.listRecords({ repo: profile.did, collection: 'app.beaglesteps.tripFollow' }),
     ]).then(([tripsRes, stepsRes, tripFollowsRes]) => {
       if (cancelled) return;
+      
       setTrips(tripsRes.data.records as TripEntry[]);
       setSteps(stepsRes.data.records as StepEntry[]);
       setTripFollows(tripFollowsRes.data.records as TripFollowEntry[]);

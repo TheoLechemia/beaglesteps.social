@@ -1,8 +1,4 @@
 - pagination in home page
-- add login page
 - fullscreen image
-- trip page : remove "distance" , fill "time", remove likes
-- access to all page witout being connected
 - code research user on sidenav
-- add user on travel card
-- add travel and user on step card
+- map on discover page

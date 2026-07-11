@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { IconArrowLeft } from '@tabler/icons-react';
+import type { AppBskyActorDefs } from '@atproto/api';
 import { useAuth } from '../context/AuthContext';
 import { Step, type StepEntry } from '../components/Step';
 import { getRepoAgent, publicAgent } from '../lib/atproto';
@@ -10,6 +11,7 @@ export function StepDetailPage() {
   const { agent } = useAuth();
   const readAgent = agent ?? publicAgent;
   const [step, setStep] = useState<StepEntry | null>(null);
+  const [authorProfile, setAuthorProfile] = useState<AppBskyActorDefs.ProfileViewDetailed | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -21,16 +23,21 @@ export function StepDetailPage() {
       .resolveHandle({ handle })
       .then(async ({ data }) => {
         const repoAgent = await getRepoAgent(data.did);
-        return repoAgent.com.atproto.repo.getRecord({ repo: data.did, collection: 'app.beaglesteps.step', rkey });
+        return Promise.all([
+          repoAgent.com.atproto.repo.getRecord({ repo: data.did, collection: 'app.beaglesteps.step', rkey }),
+          readAgent.getProfile({ actor: data.did }),
+        ]);
       })
-      .then(({ data }) => {
+      .then(([stepRes, profileRes]) => {
         if (cancelled) return;
-        setStep(data as StepEntry);
+        setStep(stepRes.data as StepEntry);
+        setAuthorProfile(profileRes.data);
         setIsLoading(false);
       })
       .catch(() => {
         if (cancelled) return;
         setStep(null);
+        setAuthorProfile(null);
         setIsLoading(false);
       });
 
@@ -47,7 +54,7 @@ export function StepDetailPage() {
     );
   }
 
-  if (!step) {
+  if (!step || !authorProfile) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-10 text-ink-muted">
         <p className="text-[13px]">Step not found.</p>
@@ -69,7 +76,7 @@ export function StepDetailPage() {
         <IconArrowLeft size={14} /> Back to trip
       </Link>
       <div className="flex-1 overflow-y-auto">
-        <Step step={step} authorHandle={handle ?? ''} defaultExpanded />
+        <Step step={step} authorProfile={authorProfile} defaultExpanded />
       </div>
     </div>
   );

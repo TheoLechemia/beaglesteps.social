@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { IconArrowLeft, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { TripStepMap } from '../components/TripStepMap';
 import { Step, type StepEntry } from '../components/Step';
+import type { AppBskyActorDefs } from '@atproto/api';
 import { useAuth } from '../context/AuthContext';
 import { useUserTrip, type TripEntry } from '../context/UserTripContext';
 import { getRepoAgent, publicAgent } from '../lib/atproto';
@@ -32,6 +33,14 @@ function stepEntryToTripStep(entry: StepEntry, index: number, total: number): Tr
   };
 }
 
+function formatDuration(startDate?: string, endDate?: string | null): string {
+  if (!startDate) return '—';
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : new Date();
+  const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  return `${days} day${days > 1 ? 's' : ''}`;
+}
+
 function tripEntryToTrip(entry: TripEntry, sortedSteps: StepEntry[], authorHandle: string): Trip {
   return {
     id: entry.uri,
@@ -44,7 +53,7 @@ function tripEntryToTrip(entry: TripEntry, sortedSteps: StepEntry[], authorHandl
       avatar: { initials: authorHandle.slice(0, 2).toUpperCase(), bg: '#E1F5EE', color: '#0F6E56' },
     },
     status: entry.value.endDate ? 'ended' : 'ongoing',
-    stats: { distance: '—', duration: '—', likes: 0 },
+    stats: { distance: '—', duration: formatDuration(entry.value.startDate, entry.value.endDate), likes: 0 },
     followers: { count: 0, avatars: [] },
     mapPin: { top: '50%', left: '50%', color: '#1D9E75', label: entry.value.title },
     steps: sortedSteps.map((s, i) => stepEntryToTripStep(s, i, sortedSteps.length)),
@@ -61,6 +70,7 @@ export function TripDetailPage() {
   const [isFollowPending, setIsFollowPending] = useState(false);
   const [remoteTrip, setRemoteTrip] = useState<TripEntry | null>(null);
   const [remoteSteps, setRemoteSteps] = useState<StepEntry[]>([]);
+  const [authorProfile, setAuthorProfile] = useState<AppBskyActorDefs.ProfileViewDetailed | null>(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
   const [isStepMenuOpen, setIsStepMenuOpen] = useState(false);
   const stepMenuRef = useRef<HTMLDivElement>(null);
@@ -91,17 +101,20 @@ export function TripDetailPage() {
         return Promise.all([
           repoAgent.com.atproto.repo.getRecord({ repo: data.did, collection: 'app.beaglesteps.trip', rkey }),
           repoAgent.com.atproto.repo.listRecords({ repo: data.did, collection: 'app.beaglesteps.step' }),
+          readAgent.getProfile({ actor: data.did }),
         ]);
       })
-      .then(([tripRes, stepsRes]) => {
+      .then(([tripRes, stepsRes, profileRes]) => {
         if (cancelled) return;
         setRemoteTrip(tripRes.data as TripEntry);
         setRemoteSteps(stepsRes.data.records as StepEntry[]);
+        setAuthorProfile(profileRes.data);
         setIsLoadingRemote(false);
       })
       .catch(() => {
         if (cancelled) return;
         setRemoteTrip(null);
+        setAuthorProfile(null);
         setIsLoadingRemote(false);
       });
 
@@ -194,9 +207,23 @@ export function TripDetailPage() {
           <div className="flex-1 overflow-y-auto">
           <div className="border-b-[0.5px] border-line p-3">
             <div className="mb-2 flex items-start justify-between gap-2">
-              <div>
-                <div className="font-voice text-[19px] leading-tight">{trip?.title}</div>
-                <div className="mb-2.5 text-xs text-ink-muted">{trip?.subtitle}</div>
+              <div className='flex gap-2'>
+                {authorProfile && (
+                  <Link to={`/profile/${authorProfile.handle}`} className="shrink-0">
+                    <img src={authorProfile.avatar} className='rounded-full w-12 h-12' alt="" />
+                  </Link>
+                )}
+                <div>
+                  {authorProfile && (
+                    <Link
+                      to={`/profile/${authorProfile.handle}`}
+                      className="mb-1 block text-[12px] text-ink-muted hover:underline"
+                    >
+                      {authorProfile.displayName && <span className="font-bold">{authorProfile.displayName}</span>}{authorProfile.displayName && ' - '}{authorProfile.handle}
+                    </Link>
+                  )}
+                  <div className="font-voice text-[19px] leading-tight">{trip?.title}</div>
+                </div>
               </div>
               {!isOwnTrip && (
                 <button
@@ -214,22 +241,13 @@ export function TripDetailPage() {
                 </button>
               )}
             </div>
-            <div className="mb-2.5 grid grid-cols-4 overflow-hidden rounded-[10px] border-[0.5px] border-line">
-              <div className="border-r-[0.5px] border-line px-2.5 py-2 text-center">
-                <div className="text-[15px] font-medium">{trip?.stats.distance ?? '—'}</div>
-                <div className="text-[10px] text-ink-muted">Distance</div>
-              </div>
+            <div className="mb-2.5 grid grid-cols-2 overflow-hidden rounded-[10px] border-[0.5px] border-line">
               <div className="border-r-[0.5px] border-line px-2.5 py-2 text-center">
                 <div className="text-[15px] font-medium">{trip?.stats.duration ?? '—'}</div>
-                <div className="text-[10px] text-ink-muted">Time</div>
               </div>
               <div className="border-r-[0.5px] border-line px-2.5 py-2 text-center">
                 <div className="text-[15px] font-medium">{trip?.steps.length ?? 0}</div>
                 <div className="text-[10px] text-ink-muted">Steps</div>
-              </div>
-              <div className="px-2.5 py-2 text-center">
-                <div className="text-[15px] font-medium">{trip?.stats.likes ?? 0}</div>
-                <div className="text-[10px] text-ink-muted">Likes</div>
               </div>
             </div>
             <div className="mb-2 text-[13px] leading-relaxed text-ink-secondary">
@@ -290,9 +308,9 @@ export function TripDetailPage() {
               ref={(el) => {
                 stepRefs.current[entry.uri] = el;
               }}
-              className={index === activeStep ? 'bg-surface-3' : ''}
+              className={index === activeStep ? 'bg-surface-2' : ''}
             >
-              <Step step={entry} authorHandle={handle ?? ''} />
+              <Step step={entry} />
             </div>
           ))}
           </div>
