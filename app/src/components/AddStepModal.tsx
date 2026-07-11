@@ -158,7 +158,6 @@ export function AddStepModal({ onClose }: AddStepModalProps) {
             </FormSelect>
           )}
           <FormInput name="title" type="text" placeholder="Title" />
-          {/* MAP */}
           <div className="flex items-center justify-between text-[12px] text-ink-muted">
             <span className="flex items-center gap-1">
               <IconMapPin size={13} /> Click on the map to place your step

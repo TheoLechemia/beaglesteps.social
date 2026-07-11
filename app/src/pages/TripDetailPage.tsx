@@ -73,8 +73,31 @@ export function TripDetailPage() {
   const [authorProfile, setAuthorProfile] = useState<AppBskyActorDefs.ProfileViewDetailed | null>(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
   const [isStepMenuOpen, setIsStepMenuOpen] = useState(false);
+  const [isMapVisible, setIsMapVisible] = useState(true);
   const stepMenuRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const lastScrollTopRef = useRef(0);
+  const downScrollAccumRef = useRef(0);
+  const HIDE_MAP_SCROLL_THRESHOLD = 1000;
+
+  function handleStepsScroll(e: React.UIEvent<HTMLDivElement>) {
+    const scrollTop = e.currentTarget.scrollTop;
+    const delta = scrollTop - lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    if (scrollTop <= 0) {
+      setIsMapVisible(true);
+      downScrollAccumRef.current = 0;
+    } else if (delta > 0) {
+      downScrollAccumRef.current += delta;
+      if (downScrollAccumRef.current > HIDE_MAP_SCROLL_THRESHOLD) {
+        setIsMapVisible(false);
+      }
+    } else if (delta < 0) {
+      downScrollAccumRef.current = 0;
+      setIsMapVisible(true);
+    }
+  }
 
   useEffect(() => {
     if (!isStepMenuOpen) return;
@@ -200,11 +223,17 @@ export function TripDetailPage() {
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <Map>
-            <TripStepsRoute steps={remoteSteps} onMarkerClick={handleMarkerClick} ></TripStepsRoute>
-          </Map>
+          <div
+            className={`overflow-hidden transition-[height] duration-300 ease-in-out ${
+              isMapVisible ? 'h-64' : 'h-0'
+            }`}
+          >
+            <Map className="h-full w-full">
+              <TripStepsRoute steps={remoteSteps} onMarkerClick={handleMarkerClick} ></TripStepsRoute>
+            </Map>
+          </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto" onScroll={handleStepsScroll}>
           <div className="border-b-[0.5px] border-line p-3">
             <div className="mb-2 flex items-start justify-between gap-2">
               <div className='flex gap-2'>
@@ -269,7 +298,7 @@ export function TripDetailPage() {
             </div> */}
           </div>
 
-          <div className="flex items-center justify-between border-b-[0.5px] border-line bg-surface-2 px-4 py-2">
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b-[0.5px] border-line bg-surface-2 px-4 py-2">
             <span className="text-[13px] text-ink-muted">{trip?.steps.length ?? 0} steps</span>
             <div className="relative" ref={stepMenuRef}>
               <button

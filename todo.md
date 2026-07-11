@@ -2,3 +2,8 @@
 - fullscreen image
 - code research user on sidenav
 - map on discover page
+- On step click in discover, select step in travel detail
+- add country and flag on step
+- add a logo
+- add a step social preview for bsky and other
+- zoom on map when scroll

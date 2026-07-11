@@ -11,7 +11,7 @@ export function ImageCarousel({ images }: ImageCarouselProps) {
   if (images.length === 0) return null;
 
   return (
-    <div className="relative mt-2 h-120 w-full overflow-hidden rounded-xl bg-surface-1">
+    <div className="relative mt-2 h-100 w-full overflow-hidden rounded-xl bg-surface-1">
       <img src={images[index]} alt="" className="h-full w-full object-contain" />
 
       {index > 0 && (
