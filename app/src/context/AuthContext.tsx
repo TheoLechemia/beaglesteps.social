@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               `http://${window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname}${window.location.port ? `:${window.location.port}` : ''}/`,
             ],
           })
-        : 'https://beaglesteps.app/client-metadata.json',
+        : `https://${import.meta.env.VITE_APP_DOMAIN ?? 'beaglesteps.social'}/client-metadata.json`,
       handleResolver: 'https://eurosky.social',
       // handleResolver: 'https://bsky.social',
     }).then(async (loadedClient) => {

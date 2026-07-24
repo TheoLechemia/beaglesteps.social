@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Local env config — copy .env.example to .env and adjust
+.env
+
+# Generated from VITE_APP_DOMAIN at build time (see scripts/generate-client-metadata.mjs)
+/public/client-metadata.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

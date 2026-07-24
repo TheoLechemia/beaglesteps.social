@@ -20,15 +20,17 @@ The active code lives in `app/` — a React + TypeScript + Vite project. AT Prot
 
 - Node version: **use Node 22**, not the OS default. An `.nvmrc` (`22`) is present in `app/`; run `nvm use` there. The system default Node (v16 via `nvm alias default`) is too old for Vite 8 / Tailwind v4 / this toolchain.
 - Package manager: npm.
+- Env vars: copy `app/.env.example` to `app/.env` before running dev or build. Currently one var, `VITE_APP_DOMAIN` (defaults to `beaglesteps.social`) — the domain the app is deployed on, used to build the production AT Proto OAuth `clientId` and to generate `public/client-metadata.json`. Change it there (not inline in code) if the app moves to a different domain.
 - `npm install` — install deps.
 - `npm run dev` — start the Vite dev server.
-- `npm run build` — `tsc -b && vite build` (type-checks before bundling).
+- `npm run build` — regenerates `public/client-metadata.json` from `VITE_APP_DOMAIN` (`scripts/generate-client-metadata.mjs`), then `tsc -b && vite build` (type-checks before bundling).
+- `npm run generate:client-metadata` — regenerate `public/client-metadata.json` on its own, without a full build.
 - `npm run lint` — `oxlint`.
 - No test suite exists yet.
 
 ## `app/` — architecture
 
-- **Auth**: `AuthContext` (`src/context/AuthContext.tsx`) drives AT Proto OAuth via `@atproto/oauth-client-browser` (`BrowserOAuthClient`), producing an authenticated `Agent` (`@atproto/api`) and the user's `profile`. `ProtectedRoute` gates authenticated routes and redirects to `/login` while a session is loading/absent.
+- **Auth**: `AuthContext` (`src/context/AuthContext.tsx`) drives AT Proto OAuth via `@atproto/oauth-client-browser` (`BrowserOAuthClient`), producing an authenticated `Agent` (`@atproto/api`) and the user's `profile`. `ProtectedRoute` gates authenticated routes and redirects to `/login` while a session is loading/absent. In dev, `clientId` is an auto-generated loopback client id (`buildAtprotoLoopbackClientId`); in production it's `https://${VITE_APP_DOMAIN}/client-metadata.json`, a static file generated at build time (`scripts/generate-client-metadata.mjs`) into `public/client-metadata.json` — see "app/ — commands" above for the `VITE_APP_DOMAIN` env var.
 - **Routing**: `react-router-dom`, wired in `src/main.tsx` (`<BrowserRouter>` + `<AuthProvider>` + `<UserTripProvider>`) and `src/App.tsx` (`<Routes>`), which also renders the persistent `<SideNav />` once authenticated. Routes: `/login`, and behind `ProtectedRoute`: `/` (Discover feed), `/profile/:handle` (profile: own or others' steps/trips tabs), `/profile/:handle/trip/:rkey` (trip detail), `/profile/:handle/step/:rkey` (step detail — see Social layer below).
 - **Data layer**: real records now, not static data. `src/types/trip.ts` defines `StepRecord`/`TripRecord` (the AT Proto record shapes for the `app.beaglesteps.step` / `app.beaglesteps.trip` lexicons — informally described in `app/lexicon/*.json`, not yet real lexicon schema files) alongside the older static-prototype `Trip`/`TripStep` view shapes. `UserTripContext` (`src/context/UserTripContext.tsx`) loads/creates the current user's own trips and steps via `agent.com.atproto.repo.*` against their PDS repo; pages that read another user's trip (e.g. `TripDetailPage`) resolve the handle to a DID and call `getRecord`/`listRecords` directly. `src/data/trips.ts` / `getTripById` is legacy static data, only still used by the "Travels" tab in `DiscoverPage` — don't add new content there.
 - **Pages** (`src/pages/`):
