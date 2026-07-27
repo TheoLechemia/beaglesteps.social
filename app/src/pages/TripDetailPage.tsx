@@ -228,7 +228,7 @@ export function TripDetailPage() {
             }`}
           >
             <Map className="h-full w-full">
-              <TripStepsRoute steps={remoteSteps} onMarkerClick={handleMarkerClick} ></TripStepsRoute>
+              <TripStepsRoute steps={sortedStepEntries} onMarkerClick={handleMarkerClick} ></TripStepsRoute>
             </Map>
           </div>
 
