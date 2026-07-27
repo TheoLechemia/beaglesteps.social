@@ -9,3 +9,4 @@ It is for now a _beta_ version with only a frontend and not Appview
 # Demo
 
 A beta version is available here : https://theolechemia.github.io/beaglesteps.social
+A trip example : https://theolechemia.github.io/beaglesteps.social/profile/robert74370.bsky.social/trip/3mpyj4cbxq72g
