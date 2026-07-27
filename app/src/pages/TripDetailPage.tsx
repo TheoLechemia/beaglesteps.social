@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { IconArrowLeft, IconChevronDown, IconPlus } from '@tabler/icons-react';
-import { TripStepMap } from '../components/TripStepMap';
 import { Step, type StepEntry } from '../components/Step';
 import type { AppBskyActorDefs } from '@atproto/api';
 import { useAuth } from '../context/AuthContext';

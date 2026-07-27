@@ -66,9 +66,9 @@ export function UserTripProvider({ children }: { children: ReactNode }) {
     const { data } = await agent.com.atproto.repo.createRecord({
       repo: profile.did,
       collection: 'app.beaglesteps.trip',
-      record,
+      record: record as unknown as Record<string, unknown>,
     });
-    const entry = { uri: data.uri, cid: data.cid, value: record } as TripEntry;
+    const entry = { uri: data.uri, cid: data.cid, value: record } as unknown as TripEntry;
     setTrips((prev) => [entry, ...prev]);
     return entry;
   }
@@ -108,9 +108,9 @@ export function UserTripProvider({ children }: { children: ReactNode }) {
     const { data } = await agent.com.atproto.repo.createRecord({
       repo: profile.did,
       collection: 'app.beaglesteps.step',
-      record: recordWithExtras,
+      record: recordWithExtras as unknown as Record<string, unknown>,
     });
-    const entry = { uri: data.uri, cid: data.cid, value: recordWithExtras } as StepEntry;
+    const entry = { uri: data.uri, cid: data.cid, value: recordWithExtras } as unknown as StepEntry;
     setSteps((prev) => [entry, ...prev]);
     return entry;
   }
@@ -139,9 +139,9 @@ export function UserTripProvider({ children }: { children: ReactNode }) {
     const { data } = await agent.com.atproto.repo.createRecord({
       repo: profile.did,
       collection: 'app.beaglesteps.tripFollow',
-      record,
+      record: record as unknown as Record<string, unknown>,
     });
-    const entry = { uri: data.uri, cid: data.cid, value: record } as TripFollowEntry;
+    const entry = { uri: data.uri, cid: data.cid, value: record } as unknown as TripFollowEntry;
     setTripFollows((prev) => [entry, ...prev]);
     return entry;
   }

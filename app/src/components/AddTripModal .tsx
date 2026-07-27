@@ -70,6 +70,10 @@ export function AddTripModal({ onClose }: AddTripModalProps) {
             <FormInput name="endDate" type="date" />
           </div>
 
+          <div className="mt-1 flex items-center justify-end">
+            {error && <span className="text-[11px] text-red-500">{error}</span>}
+          </div>
+
           <div className="mt-3 flex justify-end gap-2">
             <button
               type="button"

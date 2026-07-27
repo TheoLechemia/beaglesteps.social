@@ -163,13 +163,6 @@ export function DiscoverPage() {
             ))}
           </div>
         )}
-        {tab === 'discover' && (
-          <div className="flex-1 overflow-y-auto">
-            <div className="px-5 py-10 text-center text-[13px] text-ink-muted">
-              Last steps in the athmosphere
-            </div>
-          </div>
-        )}
       </div>
 
     </div>
