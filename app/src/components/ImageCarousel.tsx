@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import type { Touch as ReactTouch, TouchEvent as ReactTouchEvent } from 'react';
+import { useState } from 'react';
 import { IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
 
 interface ImageCarouselProps {
@@ -56,118 +55,14 @@ interface LightboxProps {
   onClose: () => void;
 }
 
-const MIN_SCALE = 1;
-const MAX_SCALE = 4;
-const DOUBLE_TAP_SCALE = 2.5;
-const DOUBLE_TAP_MAX_DELAY_MS = 300;
-const DOUBLE_TAP_MAX_DISTANCE_PX = 30;
-
-function touchDistance(a: ReactTouch, b: ReactTouch) {
-  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-}
-
 function Lightbox({ images, index, onIndexChange, onClose }: LightboxProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
-  const [isTouching, setIsTouching] = useState(false);
-  const pinchStartDistanceRef = useRef(0);
-  const pinchStartScaleRef = useRef(1);
-  const panStartRef = useRef<{ x: number; y: number } | null>(null);
-  const panStartTranslateRef = useRef({ x: 0, y: 0 });
-  const lastTapRef = useRef<{ time: number; x: number; y: number } | null>(null);
-
-  // Zoom/pan only makes sense per-photo, reset when navigating to the next/previous one.
-  useEffect(() => {
-    setScale(1);
-    setTranslate({ x: 0, y: 0 });
-  }, [index]);
-
-  function clampTranslate(next: { x: number; y: number }, forScale: number) {
-    const bounds = containerRef.current?.getBoundingClientRect();
-    if (!bounds) return next;
-    const maxX = (bounds.width * (forScale - 1)) / 2;
-    const maxY = (bounds.height * (forScale - 1)) / 2;
-    return {
-      x: Math.min(maxX, Math.max(-maxX, next.x)),
-      y: Math.min(maxY, Math.max(-maxY, next.y)),
-    };
-  }
-
-  function toggleDoubleTapZoom() {
-    if (scale > 1) {
-      setScale(1);
-      setTranslate({ x: 0, y: 0 });
-    } else {
-      setScale(DOUBLE_TAP_SCALE);
-    }
-  }
-
-  function handleTouchStart(e: ReactTouchEvent<HTMLImageElement>) {
-    if (e.touches.length === 2) {
-      setIsTouching(true);
-      pinchStartDistanceRef.current = touchDistance(e.touches[0], e.touches[1]);
-      pinchStartScaleRef.current = scale;
-      panStartRef.current = null;
-    } else if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      const now = Date.now();
-      const lastTap = lastTapRef.current;
-      if (
-        lastTap &&
-        now - lastTap.time < DOUBLE_TAP_MAX_DELAY_MS &&
-        Math.hypot(touch.clientX - lastTap.x, touch.clientY - lastTap.y) < DOUBLE_TAP_MAX_DISTANCE_PX
-      ) {
-        toggleDoubleTapZoom();
-        lastTapRef.current = null;
-      } else {
-        lastTapRef.current = { time: now, x: touch.clientX, y: touch.clientY };
-      }
-      if (scale > 1) {
-        setIsTouching(true);
-        panStartRef.current = { x: touch.clientX, y: touch.clientY };
-        panStartTranslateRef.current = translate;
-      }
-    }
-  }
-
-  function handleTouchMove(e: ReactTouchEvent<HTMLImageElement>) {
-    if (e.touches.length === 2 && pinchStartDistanceRef.current > 0) {
-      e.preventDefault();
-      const distance = touchDistance(e.touches[0], e.touches[1]);
-      const nextScale = Math.min(
-        MAX_SCALE,
-        Math.max(MIN_SCALE, pinchStartScaleRef.current * (distance / pinchStartDistanceRef.current)),
-      );
-      setScale(nextScale);
-      setTranslate((t) => clampTranslate(t, nextScale));
-    } else if (e.touches.length === 1 && panStartRef.current) {
-      e.preventDefault();
-      const touch = e.touches[0];
-      const next = {
-        x: panStartTranslateRef.current.x + (touch.clientX - panStartRef.current.x),
-        y: panStartTranslateRef.current.y + (touch.clientY - panStartRef.current.y),
-      };
-      setTranslate(clampTranslate(next, scale));
-    }
-  }
-
-  function handleTouchEnd(e: ReactTouchEvent<HTMLImageElement>) {
-    if (e.touches.length < 2) pinchStartDistanceRef.current = 0;
-    if (e.touches.length === 0) {
-      panStartRef.current = null;
-      setIsTouching(false);
-    }
-  }
-
   return (
     <div
-      ref={containerRef}
       onClick={(e) => {
         e.stopPropagation();
         onClose();
       }}
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
     >
       <button
         type="button"
@@ -184,10 +79,8 @@ function Lightbox({ images, index, onIndexChange, onClose }: LightboxProps) {
       <img
         src={images[index]}
         alt=""
-        // onClick={(e) => e.stopPropagation()}
-
-        style={{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})` }}
-        className={`max-h-full max-w-full touch-none object-contain ${isTouching ? '' : 'transition-transform duration-200 ease-out'}`}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-full max-w-full object-contain"
       />
 
       {index > 0 && (
