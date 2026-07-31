@@ -23,12 +23,16 @@ function App() {
       <div className="flex h-full w-full max-w-6xl overflow-hidden">
         <div className="flex min-w-0 flex-1 overflow-hidden">
           <SideNav />
-          <Routes>
-            <Route path="/" element={<DiscoverPage />} />
-            <Route path="/profile/:handle/trip/:rkey" element={<TripDetailPage />} />
-            <Route path="/profile/:handle/step/:rkey" element={<StepDetailPage />} />
-            <Route path="/profile/:handle" element={<UserProfilePage />} />
-          </Routes>
+          <div className="flex min-w-0 flex-1 overflow-hidden border-r-[0.5px] border-line">
+            <Routes>
+              <Route path="/" element={<DiscoverPage />} />
+              <Route path="/profile/:handle/trip/:rkey" element={<TripDetailPage />} />
+              <Route path="/profile/:handle/step/:rkey" element={<StepDetailPage />} />
+              <Route path="/profile/:handle" element={<UserProfilePage />} />
+            </Routes>
+          </div>
+          {/* Reserved for a map, shown on large screens only */}
+          <div className="hidden w-60 shrink-0 lg:block" aria-hidden />
         </div>
       </div>
     </div>

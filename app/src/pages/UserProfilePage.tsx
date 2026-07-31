@@ -76,7 +76,7 @@ export function UserProfilePage () {
 
     return (
         <div className="flex flex-1 overflow-hidden">
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden border-r-[0.5px] border-line">
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <div className="relative">
                 <div className="h-30 bg-surface-1"></div>
                 <img
@@ -136,7 +136,6 @@ export function UserProfilePage () {
             </div>
 
         </div>
-        <div className="w-60 shrink-0" aria-hidden />
     </div>
     );
 }

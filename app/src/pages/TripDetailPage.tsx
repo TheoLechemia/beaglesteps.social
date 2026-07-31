@@ -32,15 +32,16 @@ function stepEntryToTripStep(entry: StepEntry, index: number, total: number): Tr
   };
 }
 
-function formatDuration(startDate?: string, endDate?: string | null): string {
-  if (!startDate) return '—';
+function formatDuration(startDate?: string, endDate?: string | null): number {
+  if (!startDate) return 0;
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : new Date();
-  const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-  return `${days} day${days > 1 ? 's' : ''}`;
-}
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  }
 
 function tripEntryToTrip(entry: TripEntry, sortedSteps: StepEntry[], authorHandle: string): Trip {
+  console.log("entry", entry.value);
+  
   return {
     id: entry.uri,
     title: entry.value.title,
@@ -272,6 +273,8 @@ export function TripDetailPage() {
             <div className="mb-2.5 grid grid-cols-2 overflow-hidden rounded-[10px] border-[0.5px] border-line">
               <div className="border-r-[0.5px] border-line px-2.5 py-2 text-center">
                 <div className="text-[15px] font-medium">{trip?.stats.duration ?? '—'}</div>
+                <div className="text-[10px] text-ink-muted">Days</div>
+
               </div>
               <div className="border-r-[0.5px] border-line px-2.5 py-2 text-center">
                 <div className="text-[15px] font-medium">{trip?.steps.length ?? 0}</div>
