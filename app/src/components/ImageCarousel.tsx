@@ -184,11 +184,8 @@ function Lightbox({ images, index, onIndexChange, onClose }: LightboxProps) {
       <img
         src={images[index]}
         alt=""
-        onClick={(e) => e.stopPropagation()}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+        // onClick={(e) => e.stopPropagation()}
+
         style={{ transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})` }}
         className={`max-h-full max-w-full touch-none object-contain ${isTouching ? '' : 'transition-transform duration-200 ease-out'}`}
       />
