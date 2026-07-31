@@ -53,7 +53,7 @@ function tripEntryToTrip(entry: TripEntry, sortedSteps: StepEntry[], authorHandl
       avatar: { initials: authorHandle.slice(0, 2).toUpperCase(), bg: '#E1F5EE', color: '#0F6E56' },
     },
     status: entry.value.endDate ? 'ended' : 'ongoing',
-    stats: { distance: '—', duration: formatDuration(entry.value.startDate, entry.value.endDate), likes: 0 },
+    stats: { distance: '—', duration: String(formatDuration(entry.value.startDate, entry.value.endDate)), likes: 0 },
     followers: { count: 0, avatars: [] },
     mapPin: { top: '50%', left: '50%', color: '#1D9E75', label: entry.value.title },
     steps: sortedSteps.map((s, i) => stepEntryToTripStep(s, i, sortedSteps.length)),
