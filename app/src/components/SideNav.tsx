@@ -54,9 +54,13 @@ export function SideNav() {
   if (!isAuthenticated) {
     return (
       <nav className="hidden md:flex w-56 shrink-0 flex-col gap-1 border-r border-line bg-surface-0 p-4">
-        <div className="mb-6 px-1 font-voice text-[20px] leading-tight">
-          BeagleSteps<span className="text-primary">.social</span>
-        </div>
+        <Link to="/">
+          <div className="mb-6 px-1">
+            <span className="font-brand text-[20px] font-extrabold leading-tight tracking-tighter">
+              beagle<span className="inline-block border-b-4 border-primary pb-0 leading-none">steps</span><span className="text-primary">.social</span>
+            </span>
+          </div>
+        </Link>
         <Link
           to="/login"
           className="flex items-center justify-center gap-2 rounded-full bg-primary py-2.5 text-[15px] font-semibold text-surface-0 hover:bg-primary-700"
@@ -75,9 +79,11 @@ export function SideNav() {
 
   return (
     <nav className="hidden md:flex w-56 shrink-0 flex-col border-r border-line bg-surface-0 p-4">
-      <div className="mb-6 px-1 font-voice text-[20px] leading-tight">
-        BeagleSteps<span className="text-primary">.social</span>
-      </div>
+      <Link to="/" className="mb-6 px-1 flex">
+        <span className="font-brand text-[20px] font-extrabold leading-tight tracking-tighter">
+          beagle<span className="inline-block border-b-4 border-primary pb-0 leading-none">steps</span><span className="text-primary">.social</span>
+        </span>
+      </Link>
 
       <div className="flex flex-col gap-1">
         <Link

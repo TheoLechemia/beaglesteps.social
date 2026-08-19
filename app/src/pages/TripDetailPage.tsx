@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { IconArrowLeft, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { Step, type StepEntry } from '../components/Step';
@@ -73,31 +73,46 @@ export function TripDetailPage() {
   const [authorProfile, setAuthorProfile] = useState<AppBskyActorDefs.ProfileViewDetailed | null>(null);
   const [isLoadingRemote, setIsLoadingRemote] = useState(false);
   const [isStepMenuOpen, setIsStepMenuOpen] = useState(false);
-  const [isMapVisible, setIsMapVisible] = useState(true);
+  const [isInlineMapVisible, setIsInlineMapVisible] = useState(true);
   const stepMenuRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<Record<string, HTMLDivElement | null>>({});
-  const lastScrollTopRef = useRef(0);
-  const downScrollAccumRef = useRef(0);
-  const HIDE_MAP_SCROLL_THRESHOLD = 1000;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const inlineMapRef = useRef<HTMLDivElement>(null);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [floatingMapLeft, setFloatingMapLeft] = useState<number | null>(null);
 
-  function handleStepsScroll(e: React.UIEvent<HTMLDivElement>) {
-    const scrollTop = e.currentTarget.scrollTop;
-    const delta = scrollTop - lastScrollTopRef.current;
-    lastScrollTopRef.current = scrollTop;
+  useEffect(() => {
+    const target = inlineMapRef.current;
+    const root = scrollContainerRef.current;
+    if (!target || !root) return;
 
-    if (scrollTop <= 0) {
-      setIsMapVisible(true);
-      downScrollAccumRef.current = 0;
-    } else if (delta > 0) {
-      downScrollAccumRef.current += delta;
-      if (downScrollAccumRef.current > HIDE_MAP_SCROLL_THRESHOLD) {
-        setIsMapVisible(false);
-      }
-    } else if (delta < 0) {
-      downScrollAccumRef.current = 0;
-      setIsMapVisible(true);
-    }
-  }
+    const observer = new IntersectionObserver(([entry]) => setIsInlineMapVisible(entry.isIntersecting), {
+      root,
+      threshold: 0,
+    });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [isLoadingRemote, remoteTrip]);
+
+  // The floating map's left edge tracks this page's own right boundary (the border
+  // shared with the reserved column in App.tsx), so it never overlaps the feed
+  // regardless of viewport width or whether the app is centered under max-w-6xl.
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node) return;
+
+    const updateLeft = () => setFloatingMapLeft(node.getBoundingClientRect().right);
+    updateLeft();
+
+    const observer = new ResizeObserver(updateLeft);
+    observer.observe(node);
+    window.addEventListener('resize', updateLeft);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateLeft);
+    };
+  }, [isLoadingRemote, remoteTrip]);
 
   useEffect(() => {
     if (!isStepMenuOpen) return;
@@ -146,28 +161,70 @@ export function TripDetailPage() {
     };
   }, [readAgent, handle, rkey]);
 
-  let trip: Trip | undefined;
-  let sortedStepEntries: StepEntry[] = [];
-  if (remoteTrip) {
+  // Memoized so the reference stays stable across scroll-driven re-renders — TripStepsRoute
+  // rebuilds its markers/route layer whenever this array changes identity, which otherwise
+  // made the route visibly flicker on every step scrolled into view.
+  const sortedStepEntries = useMemo(() => {
+    if (!remoteTrip) return [];
     const entrySteps = remoteSteps.filter((s) => s.value.tripRef?.uri === remoteTrip.uri);
-    sortedStepEntries = [...entrySteps].sort((a, b) =>
-      (a.value.date ?? '').localeCompare(b.value.date ?? '')
+    return [...entrySteps].sort((a, b) => (a.value.date ?? '').localeCompare(b.value.date ?? ''));
+  }, [remoteTrip, remoteSteps]);
+
+  const trip: Trip | undefined = remoteTrip
+    ? tripEntryToTrip(remoteTrip, sortedStepEntries, handle ?? '')
+    : undefined;
+
+  // Tracks which step is currently in view while scrolling the feed, so both maps
+  // can highlight its marker (deps are the raw fetched state, not the derived
+  // sortedStepEntries array, so the observer isn't torn down on every scroll tick).
+  useEffect(() => {
+    const root = scrollContainerRef.current;
+    if (!root) return;
+
+    const entries = Object.entries(stepRefs.current).filter(
+      (entry): entry is [string, HTMLDivElement] => entry[1] !== null
     );
-    trip = tripEntryToTrip(remoteTrip, sortedStepEntries, handle ?? '');
-  }
+    if (entries.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (observerEntries) => {
+        const visible = observerEntries.filter((e) => e.isIntersecting);
+        if (visible.length === 0) return;
+        const topMost = visible.reduce((a, b) => (a.boundingClientRect.top < b.boundingClientRect.top ? a : b));
+        const match = entries.find(([, el]) => el === topMost.target);
+        if (!match) return;
+        const index = sortedStepEntries.findIndex((s) => s.uri === match[0]);
+        if (index !== -1) setActiveStep(index);
+      },
+      { root, rootMargin: '0px 0px -60% 0px', threshold: 0 },
+    );
+
+    entries.forEach(([, el]) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [remoteTrip, remoteSteps]);
 
   const isOwnTrip = !!profile && profile.handle === handle;
   const existingFollow = remoteTrip
     ? tripFollows.find((f) => f.value.subject.uri === remoteTrip.uri)
     : undefined;
 
+  // Plain scrollIntoView({ block: 'start' }) tucks the step title right under the
+  // sticky "Jump to step" bar, hiding it — offset by that bar's height instead.
+  function scrollStepIntoView(uri: string) {
+    const container = scrollContainerRef.current;
+    const target = stepRefs.current[uri];
+    if (!container || !target) return;
+    const headerHeight = stickyHeaderRef.current?.offsetHeight ?? 0;
+    const top =
+      target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - headerHeight - 12;
+    container.scrollTo({ top, behavior: 'smooth' });
+  }
+
   function handleMarkerClick(uri: string) {
-    console.log("asse la ???");
-    
     const index = sortedStepEntries.findIndex((entry) => entry.uri === uri);
     if (index === -1) return;
     setActiveStep(index);
-    stepRefs.current[uri]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scrollStepIntoView(uri);
   }
 
   async function handleToggleFollow() {
@@ -211,29 +268,26 @@ export function TripDetailPage() {
   }
 
   const feedSteps = sortedStepEntries.map((entry, index) => ({ entry, index })).reverse();
+  const activeStepUri = sortedStepEntries[activeStep]?.uri;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div ref={rootRef} className="flex flex-1 flex-col overflow-hidden">
       <Link
         to="/"
-        className="flex shrink-0 items-center gap-1.5 border-b-[0.5px] border-line bg-surface-2 px-4 py-2.5 text-[13px] text-ink-muted hover:text-ink"
+        className="flex shrink-0 items-center gap-1.5 border-b-[0.5px] border-line px-4 py-2.5 text-[13px] text-ink-muted hover:text-ink  bg-gray-100/80 backdrop-blur-xl"
       >
         <IconArrowLeft size={14} /> Back
       </Link>
 
       <div className="flex flex-1 overflow-hidden">
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          <div
-            className={`overflow-hidden transition-[height] duration-300 ease-in-out ${
-              isMapVisible ? 'h-64' : 'h-0'
-            }`}
-          >
+          <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+          <div ref={inlineMapRef} className="h-64 shrink-0">
             <Map className="h-full w-full">
-              <TripStepsRoute steps={sortedStepEntries} onMarkerClick={handleMarkerClick} ></TripStepsRoute>
+              <TripStepsRoute steps={sortedStepEntries} activeStepUri={activeStepUri} onMarkerClick={handleMarkerClick} ></TripStepsRoute>
             </Map>
           </div>
 
-          <div className="flex-1 overflow-y-auto" onScroll={handleStepsScroll}>
           <div className="border-b-[0.5px] border-line p-3">
             <div className="mb-2 flex items-start justify-between gap-2">
               <div className='flex gap-2'>
@@ -300,7 +354,7 @@ export function TripDetailPage() {
             </div> */}
           </div>
 
-          <div className="sticky top-0 z-10 flex items-center justify-between border-b-[0.5px] border-line bg-surface-2 px-4 py-2">
+          <div ref={stickyHeaderRef} className="sticky top-0 z-10 flex items-center justify-between border-b-[0.5px] border-line bg-gray-100/80 px-5 backdrop-blur-xl py-2">
             <span className="text-[13px] text-ink-muted">{trip?.steps.length ?? 0} steps</span>
             <div className="relative" ref={stepMenuRef}>
               <button
@@ -319,7 +373,7 @@ export function TripDetailPage() {
                       onClick={() => {
                         setActiveStep(index);
                         setIsStepMenuOpen(false);
-                        stepRefs.current[entry.uri]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        scrollStepIntoView(entry.uri);
                       }}
                       className={`block w-full truncate px-3 py-2 text-left text-[13px] cursor-pointer hover:bg-surface-1 ${
                         index === activeStep ? 'font-medium text-ink' : 'text-ink-secondary'
@@ -347,6 +401,17 @@ export function TripDetailPage() {
           </div>
         </div>
       </div>
+
+      {!isInlineMapVisible && floatingMapLeft !== null && (
+        <div
+          className="fixed top-20 bottom-6 right-6 z-20 hidden overflow-hidden rounded-2xl border-[0.5px] border-line shadow-lg lg:block"
+          style={{ left: floatingMapLeft + 12 }}
+        >
+          <Map className="h-full w-full">
+            <TripStepsRoute steps={sortedStepEntries} activeStepUri={activeStepUri} onMarkerClick={handleMarkerClick} />
+          </Map>
+        </div>
+      )}
     </div>
   );
 }

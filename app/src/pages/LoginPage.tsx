@@ -40,7 +40,7 @@ export function LoginPage(){
                 <h2 className='md:hidden absolute inset-x-0 top-20 text-center font-voice text-4xl font-extrabold'>Login</h2>
                 <div className='flex w-full max-w-sm flex-col gap-6'>
                     <div className='flex flex-col gap-1 items-center justify-center'>
-                        <h1 className='font-voice text-2xl font-bold text-ink'>BeagleSteps<span className='text-primary'>.social</span></h1>
+                        <h1 className='font-brand text-2xl font-extrabold tracking-tighter text-ink'>beagle<span className='inline-block border-b-4 border-primary pb-0 leading-none'>steps</span><span className='text-primary'>.social</span></h1>
                         <p className='text-[14px] text-ink-secondary'>Sign in with your Athmosphere account to continue.</p>
                     </div>
 

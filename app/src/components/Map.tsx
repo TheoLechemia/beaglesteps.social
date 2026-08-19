@@ -33,14 +33,25 @@ export function Map({
       zoom,
     });
 
-    // Slowly spin the globe until the user (or a fitBounds call) zooms in.
+    // Slowly spin the globe until the user interacts with the map or a fitBounds
+    // call zooms in. jumpTo() every frame would otherwise fight the user's own
+    // drag/wheel input, so any interaction stops the spin immediately.
     let rotationFrame: number;
+    let isSpinning = true;
     const spinGlobe = () => {
+      if (!isSpinning) return;
       const mapCenter = instance.getCenter();
       instance.jumpTo({ center: [mapCenter.lng + 0.5, mapCenter.lat] });
       rotationFrame = requestAnimationFrame(spinGlobe);
     };
-    instance.once('zoomstart', () => cancelAnimationFrame(rotationFrame));
+    const stopSpin = () => {
+      isSpinning = false;
+      cancelAnimationFrame(rotationFrame);
+    };
+    instance.once('mousedown', stopSpin);
+    instance.once('touchstart', stopSpin);
+    instance.once('wheel', stopSpin);
+    instance.once('zoomstart', stopSpin);
 
     instance.on('load', () => {
       instance.setProjection({ type: 'globe' });
